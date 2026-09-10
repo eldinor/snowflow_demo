@@ -52,8 +52,6 @@ async function boot() {
         antialias: false, // TAA handles edges; MSAA here would just cost bandwidth
         stencil: false,
         powerPreference: "high-performance",
-        enableAllFeatures: true,
-        setMaximumLimits: true,
     });
 
     try {
@@ -71,16 +69,40 @@ async function boot() {
         console.warn("[snowflow] float32-filterable unavailable; height will step");
     }
 
-    const applyScale = () => engine.setHardwareScalingLevel(1 / S.resolutionScale);
-    applyScale();
-    onChange("resolutionScale", applyScale);
-    window.addEventListener("resize", () => engine.resize());
+    // Reconfiguring a WebGPU canvas destroys its current swap texture. Never do
+    // that directly from a DOM/settings callback: Babylon may still have that
+    // texture referenced by a command buffer waiting to be submitted. Queue
+    // changes and consume them immediately before beginning a new frame.
+    let pendingScale = S.resolutionScale;
+    let pendingResize = true;
+    const flushResize = () => {
+        if (!pendingResize) return;
+        pendingResize = false;
+        if (pendingScale !== null) {
+            engine.setHardwareScalingLevel(1 / pendingScale);
+            pendingScale = null;
+        } else {
+            engine.resize();
+        }
+    };
+    onChange("resolutionScale", (v) => {
+        pendingScale = v;
+        pendingResize = true;
+    });
+    window.addEventListener("resize", () => {
+        pendingResize = true;
+    });
+    flushResize();
 
     installDrawCounter(engine);
-    // WebGPU timestamp queries. The engine is created with `enableAllFeatures`,
-    // so `timestamp-query` is on wherever the adapter has it; if it does not,
-    // the counter simply stays at zero and the overlay shows a dash.
-    engine.captureGPUFrameTime(true);
+    // Dawn currently guards timestamp writes behind its `allow_unsafe_apis`
+    // toggle on some Chrome/driver combinations. Enabling capture there makes
+    // Babylon's whole command buffer invalid, so GPU timing is explicitly
+    // opt-in. Normal users still get all CPU/frame statistics in the overlay.
+    // Developers running a browser with timestamp queries enabled can use
+    // `?gpuTiming=1` to restore the GPU row.
+    const gpuTiming = new URLSearchParams(location.search).get("gpuTiming") === "1";
+    if (gpuTiming) engine.captureGPUFrameTime(true);
     registerShaders();
 
     await loading.phase("building scene", 0.12);
@@ -193,7 +215,15 @@ async function boot() {
     // A few real frames so every render target is allocated and every pipeline
     // has actually been bound at least once.
     for (let i = 0; i < 3; i++) {
+        flushResize();
+        // These renders happen before `runRenderLoop`, whose wrapper normally
+        // owns beginFrame/endFrame. End each warm-up frame explicitly so its
+        // command buffers are submitted while the acquired swap texture is
+        // still alive; carrying one across requestAnimationFrame invalidates
+        // Chromium's D3D shared-image backing.
+        engine.beginFrame();
         scene.render();
+        engine.endFrame();
         await loading.nextFrame();
     }
     // Only now: the spell meshes had to be standing *through* those frames for
@@ -205,6 +235,7 @@ async function boot() {
     let time = 0;
 
     engine.runRenderLoop(() => {
+        flushResize();
         const now = performance.now();
         let dtMs = now - prev;
         prev = now;
@@ -265,7 +296,9 @@ async function boot() {
         mark("cpu wake+spray", tVfx - tTerrain);
         mark("cpu submit", tRender - tVfx);
         mark("cpu total", tRender - tFrame);
-        stats.gpuMs = engine.getGPUFrameTimeCounter().lastSecAverage / 1e6;
+        stats.gpuMs = gpuTiming
+            ? engine.getGPUFrameTimeCounter().lastSecAverage / 1e6
+            : 0;
 
         endFrameDraws();
         stats.triangles =
