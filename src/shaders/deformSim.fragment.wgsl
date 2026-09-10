@@ -226,7 +226,13 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
         dep += b.z * core;
         berm += b.w * ring * grain;
         comp += c.x * core;
-        ice = max(ice, c.y * core);
+        // Positive values glaze as before; negative values are an explicit
+        // melt operation. `max` alone cannot remove persistent ice state.
+        if (c.y >= 0.0) {
+            ice = max(ice, c.y * core);
+        } else {
+            ice += c.y * core;
+        }
     }
 
     // ----------------------------------------------------------------- clamp

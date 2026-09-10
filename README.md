@@ -21,7 +21,7 @@ no meshes, no HDRIs and no animation data in this repository.
 | Mouse | look · **Wheel** zoom |
 | `Shift` | sprint |
 | **Right mouse (hold)** | snow-surf — carve across the field and throw a wake |
-| `1` – `5` | the five spells (`2` is a held cast) |
+| `1` – `9` | the nine spells (`2` and `7` are held casts) |
 | `F1` or `` ` `` | settings and performance overlay |
 
 The overlay exposes every art parameter as a live slider — sun angle, wind
@@ -83,7 +83,7 @@ visibly spreading and softening as it goes.
 
 The displacement is real geometry in the beauty pass *and* in all three shadow
 cascades through one shared include, so trails self-shadow and berms break the
-silhouette. Feet, the surf wake and all five spells write through one `brush()`
+silhouette. Feet, the surf wake and all nine spells write through one `brush()`
 call into the same buffer.
 
 ### The character
@@ -131,9 +131,9 @@ Two spray populations come off the same spine — a dense slow curtain hugging t
 crest and ballistic grains flung clear — emitted at *fractional* positions along
 it, plus screen-space speed streaks and camera shake on a loaded edge.
 
-### The five spells
+### The nine spells
 
-One water material, one mesh, one draw, eight strands. Four of the five move a
+One water material, one mesh, one draw, eight strands. Six of the nine move a
 coherent body of water and are structurally the same object: a swept surface
 along a spine with a radius, a parallel-transported frame and a foam channel —
 the same construction as the surf wake. A strand that is not in use is switched
@@ -157,6 +157,19 @@ are up.
 5. **Vortex** — three helices of lifted snow winding around the player, with the
    airborne mass emitted along those same helices at their own tangential
    velocity. The only system here that writes a *negative* depression.
+6. **Rift** — a branching fissure races away along the aim direction, cutting a
+   narrow glazed trench into the real terrain, piling broken lips on either side
+   and throwing snow from a cold light travelling inside the crack.
+7. **Aegis** — a held cast growing a bowed wall of interlocking ice teeth from
+   its centre outward. Release leaves the built section standing; press `7`
+   again to shatter it into ice and snow spray.
+8. **Avalanche** — a broad slab fractures ahead of the caster and accelerates
+   across the sampled terrain, dragging a breaking snow face, dense powder and
+   ballistic clods over a wide compressed track with displaced edge berms.
+9. **Thaw** — a targeted warm pulse expands through persistent terrain state,
+   filling trenches, collapsing berms, loosening packed snow and melting glaze.
+   Nearby crystal formations sublimate while a short, snow-covered slush seam
+   finds a downhill path through the mist.
 
 Refraction needs no scene copy and no second opaque pass: the sky LUT already
 stores the solved snow bounce below the horizon, so one lookup along the
@@ -252,7 +265,7 @@ src/
   render/            sky + IBL, shadow cascades, depth prepass
   character/         skeleton, procedural geometry, cloth solver, snow contact
   vfx/               pooled particles, the snow-surf wake
-  spells/            the five spells, the shared water body, the light pool
+  spells/            the nine spells, the shared water body, the light pool
   post/              the post-processing chain
   ui/                settings and performance overlay
   shaders/           all WGSL — lib/ holds the shared includes

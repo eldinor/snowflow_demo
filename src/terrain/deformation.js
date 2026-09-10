@@ -139,7 +139,7 @@ export class DeformationField {
      * @param {number} depth metres of depression at the centre
      * @param {number} berm metres of displaced mass thrown to the rim
      * @param {number} compression 0..1 added to the compression channel
-     * @param {number} ice 0..1, taken as a max rather than added
+     * @param {number} ice positive 0..1 glazes by max; negative values melt
      * @param {number} [yaw] radians, orients the long axis
      * @param {number} [elongation] long-axis multiple of `radius`, 1 = round
      * @param {number} [edge] 0..1 rim roughness; 0 is a clean bevel

@@ -1,7 +1,7 @@
 /**
  * Shared bending primitives.
  *
- * The five spells differ in what they do and agree on how they move. This is the
+ * The nine spells differ in what they do and agree on how they move. This is the
  * "how": easing that never snaps, a frame that never flips, and the two queries
  * against the world every one of them needs.
  *

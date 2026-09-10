@@ -4,7 +4,7 @@
  * One system serves every source of airborne snow in the demo: footfalls now,
  * the snow-surf plume and the spell spray later. That is deliberate. A separate
  * emitter per effect means separate pipelines, separate warm-up, separate
- * sorting, and five slightly different ideas about what lit snow powder looks
+ * sorting, and nine slightly different ideas about what lit snow powder looks
  * like. There is one pipeline here and one lighting model.
  *
  * Simulation is on the CPU because the particle count is small (a footfall is

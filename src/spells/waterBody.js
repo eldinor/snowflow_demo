@@ -1,7 +1,7 @@
 /**
  * The bent-water renderer — one mesh, one material, one draw, eight strands.
  *
- * Four of the five spells move a coherent body of water, and they are all the
+ * Six of the nine spells move a coherent body of water, and they are all the
  * same object: a swept surface along a spine, with a radius, a transported frame
  * and a foam channel. Giving each spell its own mesh would mean four pipelines,
  * four warm-ups, four sets of shadow-and-fog uniforms, and four slightly

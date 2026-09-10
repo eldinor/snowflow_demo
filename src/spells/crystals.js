@@ -197,7 +197,7 @@ export class CrystalField {
             // hunting for it costs more than it is worth at this count. Dropping
             // the new crystal loses one prism out of a cluster of forty, which
             // nobody can see.
-            if (n === CRYSTAL_MAX - 1) return;
+            if (n === CRYSTAL_MAX - 1) return -1;
         }
         this._next = (i + 1) % CRYSTAL_MAX;
 
@@ -216,6 +216,34 @@ export class CrystalField {
         this.grow[i] = Math.max(growSeconds, 0.05);
         this.alive[i] = 1;
         this._dirty = true;
+        return i;
+    }
+
+    /** Immediately retire one owned crystal without disturbing the pool. */
+    retire(i) {
+        if (i < 0 || i >= CRYSTAL_MAX || !this.alive[i]) return false;
+        this.alive[i] = 0;
+        this._texData[CRYSTAL_MAX * 8 + i * 4] = 0;
+        this._dirty = true;
+        return true;
+    }
+
+    /** Begin and accelerate sublimation for crystals inside a world-space disc. */
+    meltNear(x, z, radius, amount) {
+        const d = this._texData;
+        const rr = radius * radius;
+        let touched = 0;
+        for (let i = 0; i < CRYSTAL_MAX; i++) {
+            if (!this.alive[i]) continue;
+            const o = i * 4;
+            const dx = d[o] - x;
+            const dz = d[o + 2] - z;
+            if (dx * dx + dz * dz > rr) continue;
+            if (this.life[i] > this.age[i]) this.life[i] = this.age[i];
+            this.age[i] += amount;
+            touched++;
+        }
+        return touched;
     }
 
     /**

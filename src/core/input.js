@@ -21,10 +21,12 @@ export const input = {
     surf: false, // RMB held
     sprint: false, // shift
 
-    /** @type {number} 0 = none, else 1..5 — set on keydown, cleared each frame */
+    /** @type {number} 0 = none, else 1..9 — set on keydown, cleared each frame */
     spellPressed: 0,
     /** @type {boolean} spell 2 (Ribbon) is a held cast */
     spellHeld2: false,
+    /** @type {boolean} spell 7 (Aegis) grows while held */
+    spellHeld7: false,
 
     locked: false,
 };
@@ -54,6 +56,7 @@ export function initInput(canvas, hooks) {
             for (const k in keys) keys[k] = false;
             input.surf = false;
             input.spellHeld2 = false;
+            input.spellHeld7 = false;
         }
     });
 
@@ -98,18 +101,21 @@ export function initInput(canvas, hooks) {
         if (n) {
             input.spellPressed = n;
             if (n === 2) input.spellHeld2 = true;
+            if (n === 7) input.spellHeld7 = true;
         }
     });
 
     window.addEventListener("keyup", (e) => {
         keys[e.code] = false;
         if (SPELL_KEYS[e.code] === 2) input.spellHeld2 = false;
+        if (SPELL_KEYS[e.code] === 7) input.spellHeld7 = false;
     });
 
     window.addEventListener("blur", () => {
         for (const k in keys) keys[k] = false;
         input.surf = false;
         input.spellHeld2 = false;
+        input.spellHeld7 = false;
     });
 }
 
@@ -119,6 +125,10 @@ const SPELL_KEYS = {
     Digit3: 3,
     Digit4: 4,
     Digit5: 5,
+    Digit6: 6,
+    Digit7: 7,
+    Digit8: 8,
+    Digit9: 9,
 };
 
 /** Resolve held keys into movement axes. Called once per frame before update. */

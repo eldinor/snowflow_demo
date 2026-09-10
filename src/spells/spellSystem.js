@@ -1,7 +1,7 @@
 /**
  * The spell system — dispatch, shared context, and the casting pose.
  *
- * Owns the five spells, the water body they draw into, the ice they leave, and
+ * Owns the nine spells, the water body they draw into, the ice they leave, and
  * the light pool every material reads. One `update()` per frame, in this order,
  * and the order is load-bearing:
  *
@@ -32,6 +32,10 @@ import { Ribbon } from "./ribbon.js";
 import { Bloom } from "./bloom.js";
 import { Crystallize } from "./crystallize.js";
 import { Vortex } from "./vortex.js";
+import { Rift } from "./rift.js";
+import { Aegis } from "./aegis.js";
+import { Avalanche } from "./avalanche.js";
+import { Thaw } from "./thaw.js";
 import { aimPoint, clamp01 } from "./bending.js";
 
 /**
@@ -91,8 +95,16 @@ export class SpellSystem {
         this.bloom = new Bloom(this.ctx);
         this.crystallize = new Crystallize(this.ctx);
         this.vortex = new Vortex(this.ctx);
+        this.rift = new Rift(this.ctx);
+        this.aegis = new Aegis(this.ctx);
+        this.avalanche = new Avalanche(this.ctx);
+        this.thaw = new Thaw(this.ctx);
 
-        this.spells = [this.sweep, this.ribbon, this.bloom, this.crystallize, this.vortex];
+        this.spells = [
+            this.sweep, this.ribbon, this.bloom,
+            this.crystallize, this.vortex, this.rift, this.aegis,
+            this.avalanche, this.thaw,
+        ];
 
         /**
          * Materials outside the spell system that shade with the spell lights.
@@ -174,7 +186,7 @@ export class SpellSystem {
         // The casting stance eases in while anything is up and out again after.
         // Nothing about it is a switch.
         const casting =
-            this.ribbon.active || this._time - this._lastCast < 0.55 ? 1 : 0;
+            this.ribbon.active || this.aegis.held || this._time - this._lastCast < 0.55 ? 1 : 0;
         this.castBlend = expDamp(this.castBlend, casting, casting ? 7.0 : 3.2, dt);
         const ch = this.ctx.controller;
         ch.cast = this.castBlend;
@@ -199,6 +211,7 @@ export class SpellSystem {
         this.holdRibbon(input.spellHeld2 || this.debugRibbon);
         const key = input.spellPressed;
         if (key && key !== 2) this.cast(key);
+        this.aegis.setHeld(input.spellHeld7);
     }
 
     /**
@@ -207,7 +220,7 @@ export class SpellSystem {
      * Separated from the input poll so the console or a future rebind can cast
      * without synthesising a key event. `SNOWFLOW.spells` is the console handle.
      *
-     * @param {number} key 1..5
+     * @param {number} key 1..9
      */
     cast(key) {
         const ctx = this.ctx;
@@ -256,6 +269,52 @@ export class SpellSystem {
         if (key === 5) {
             this.vortex.trigger();
             rig.addTrauma(0.10);
+            return;
+        }
+
+        if (key === 6) {
+            const fl = Math.hypot(this.aim.x, this.aim.z) || 1;
+            this.rift.trigger(this.aim.x / fl, this.aim.z / fl);
+            return;
+        }
+
+        if (key === 7) {
+            if (this.aegis.hasWall) {
+                this.aegis.shatter();
+                return;
+            }
+            const eye = rig.camera.position;
+            aimPoint(
+                _aim, ctx.terrain,
+                eye.x, eye.y, eye.z,
+                this.aim.x, this.aim.y, this.aim.z,
+                14, 8
+            );
+            const fl = Math.hypot(this.aim.x, this.aim.z) || 1;
+            this.aegis.trigger(_aim[0], _aim[2], this.aim.x / fl, this.aim.z / fl);
+            return;
+        }
+
+        if (key === 8) {
+            const fl = Math.hypot(this.aim.x, this.aim.z) || 1;
+            this.avalanche.trigger(this.aim.x / fl, this.aim.z / fl);
+            rig.addTrauma(0.08);
+            return;
+        }
+
+        if (key === 9) {
+            const eye = rig.camera.position;
+            aimPoint(
+                _aim, ctx.terrain,
+                eye.x, eye.y, eye.z,
+                this.aim.x, this.aim.y, this.aim.z,
+                16, 9
+            );
+            const fl = Math.hypot(this.aim.x, this.aim.z) || 1;
+            this.thaw.trigger(
+                _aim[0], _aim[1], _aim[2],
+                this.aim.x / fl, this.aim.z / fl
+            );
         }
     }
 

@@ -166,7 +166,7 @@ async function boot() {
     onChange("showWake", (v) => wake.setEnabled(v));
     wake.registerPrepass(depthPass);
 
-    // The five spells, the water body they bend and the ice they leave. Every
+    // The nine spells, the water body they bend and the ice they leave. Every
     // one of them writes into the same terrain state buffer the feet and the
     // wake do, and lights the snow through the same four-slot pool.
     const spells = new SpellSystem(
