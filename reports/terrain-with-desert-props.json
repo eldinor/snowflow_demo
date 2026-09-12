@@ -1,0 +1,56 @@
+{
+  "recorded": "2026-09-12T13:45:28.931Z",
+  "resolution": "1280x800",
+  "environment": "Headless Chrome, WebGPU; presentation frame timing, not GPU timestamps",
+  "results": [
+    {
+      "id": "desert-start",
+      "medianMs": 41.10000002384186,
+      "p95Ms": 47.59999996423721,
+      "drawCalls": 126,
+      "triangles": 774879
+    },
+    {
+      "id": "C5",
+      "medianMs": 43.60000002384186,
+      "p95Ms": 46.89999997615814,
+      "drawCalls": 31,
+      "triangles": 488060
+    },
+    {
+      "id": "C3",
+      "medianMs": 30.900000035762787,
+      "p95Ms": 34,
+      "drawCalls": 25,
+      "triangles": 348910
+    },
+    {
+      "id": "C2",
+      "medianMs": 28.899999976158142,
+      "p95Ms": 31.600000023841858,
+      "drawCalls": 25,
+      "triangles": 348910
+    },
+    {
+      "id": "C6",
+      "medianMs": 28.799999952316284,
+      "p95Ms": 33.40000003576279,
+      "drawCalls": 25,
+      "triangles": 348910
+    },
+    {
+      "id": "lakeside-overlook",
+      "medianMs": 30.80000001192093,
+      "p95Ms": 34.19999998807907,
+      "drawCalls": 25,
+      "triangles": 348910
+    },
+    {
+      "id": "stone-gate",
+      "medianMs": 30.899999976158142,
+      "p95Ms": 33.5,
+      "drawCalls": 31,
+      "triangles": 393760
+    }
+  ]
+}

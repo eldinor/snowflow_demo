@@ -10,6 +10,8 @@
  */
 
 import { ShaderStore } from "@babylonjs/core/Engines/shaderStore";
+import desertPropVert from './desertProp.vertex.wgsl?raw';
+import desertPropFrag from './desertProp.fragment.wgsl?raw';
 
 import noiseLib from "./lib/noise.wgsl?raw";
 import terrainLib from "./lib/terrain.wgsl?raw";
@@ -150,6 +152,8 @@ let registered = false;
 export function registerShaders() {
     if (registered) return;
     registered = true;
+    ShaderStore.ShadersStoreWGSL.desertPropVertexShader = desertPropVert;
+    ShaderStore.ShadersStoreWGSL.desertPropPixelShader = desertPropFrag;
 
     for (const name in INCLUDES) {
         ShaderStore.IncludesShadersStoreWGSL[name] = INCLUDES[name];

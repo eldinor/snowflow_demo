@@ -13,7 +13,7 @@ test('sand and snow deform locally with raised rims, grounded readback and hard-
         await page.waitForTimeout(250);
         const point = await page.evaluate((id) => {
             const t = SNOWFLOW.terrain, ch = SNOWFLOW.character;
-            // Desert Start is on the authored road fork. Test loose sand beside it.
+            // Both starts are on soft terrain; stamp beside the avatar's feet.
             const x = ch.position.x + (id === 'desert-start' ? -5 : 2), z = ch.position.z;
             t.deform.brush(x, z, 0.7, 0.32, 0.16, 0.9, 0, 0, 1, 0);
             return { x, z, weights: [...t.heightfield.weightsAt(x, z)], native: t.heightfield.heightAt(x, z) };
@@ -39,7 +39,7 @@ test('sand and snow deform locally with raised rims, grounded readback and hard-
         expect(point.weights[id === 'C5' ? 0 : 1]).toBeGreaterThan(0.9);
         depths.push(result.depth);
         await page.locator('#view').focus();
-        const key = id === 'desert-start' ? 'KeyS' : 'KeyW';
+        const key = 'KeyW';
         await page.keyboard.down(key);
         await page.waitForTimeout(3000);
         await page.keyboard.up(key);

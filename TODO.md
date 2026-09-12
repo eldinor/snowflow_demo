@@ -51,7 +51,7 @@ The external Exalted directory is readable directly; copying the entire project 
 - [ ] Add persistent track storage if marks must survive leaving the moving simulation window.
 - [ ] Profile on target hardware with the actual desert props before choosing final detail and shadow budgets.
 
-Implementation limits: detail uses a 32 × 32 m square around the avatar with a 12–16 m fade; the source patch changes every 8 m. The 128 × 128 grounding probe covers 16 m and reads at most 10 times per second, so new impressions have asynchronous grounding latency. Biome classification follows supplied colours, not missing analytic biome data. Desert Start itself is on the firm road fork; loose sand is beside and behind it.
+Implementation limits: detail uses a 32 × 32 m square around the avatar with a 12–16 m fade; the source patch changes every 8 m. The 128 × 128 grounding probe covers 16 m and reads at most 10 times per second, so new impressions have asynchronous grounding latency. Biome classification follows supplied colours, not missing analytic biome data. Desert Start is now 12 m south of the authored road fork, at chart (65, -616), on loose sand for immediate footprints.
 
 ## Map findings
 
@@ -79,16 +79,22 @@ Implementation limits: detail uses a 32 × 32 m square around the avatar with a 
 - The handoff identifies desert assets as commercially usable: Poly Haven CC0 or in-house assets.
 - The regional ground and full-world terrain are separate exports. Prop seating must be checked against the retained `alpha-map.glb`; the handoff also flags historical floating-prop issues on steep slopes.
 
-## Next: main desert spawn
+## Main desert spawn dressing
 
-- [ ] Bundle `exalted_desert.glb` and preserve its source/provenance information.
-- [ ] Import its vegetation and rocks with their materials and authored transforms.
-- [ ] Exclude its separate ground mesh from rendering and grounding to avoid overlapping terrain; retain `alpha-map.glb` as the ground source.
-- [ ] Check coordinate alignment and plant/rock seating around spawn against the actual retained terrain and handoff proof images.
-- [ ] Preserve the existing placement; identify any floating or buried props before making seating adjustments.
-- [ ] Make the imported materials work with Snowflow's lighting and post-processing, including vegetation transparency, shadows and depth passes.
-- [ ] Measure loading cost, draw calls and frame time. Use shared geometry, instancing and distance culling as appropriate for the actual file structure.
-- [ ] Review spawn clearance, the north-facing road/mountain-gap view, and movement through the dressed arrival area.
+- [x] Bundle `exalted_desert.glb` and preserve its source/provenance information; SHA-256 matches the external source.
+- [x] Import its vegetation and rocks with their materials and authored transforms.
+- [x] Exclude its separate ground mesh from rendering and grounding to avoid overlapping terrain; retain `alpha-map.glb` as the ground source.
+- [x] Check coordinate alignment and plant/rock seating around spawn against the actual retained terrain and handoff proof images.
+- [x] Preserve the existing placement; identify any floating or buried props before making seating adjustments.
+- [x] Make the imported materials work with Snowflow's lighting and post-processing, including vegetation transparency, shadows and depth passes.
+- [x] Measure loading cost, draw calls and frame time. Use shared geometry, instancing and distance culling as appropriate for the actual file structure.
+- [x] Review spawn clearance, the north-facing road/mountain-gap view, and movement through the dressed arrival area.
+- [ ] Review the 15 nearby rocks whose lowest vertices are buried by more than 0.5 m; the audit does not establish whether that embedding is intentional. No placement adjustments were made.
+- [ ] Decide which larger props should block the avatar; currently all are visual dressing.
+
+Runtime findings: 23 geometry/material groups represent 15,946 primitive instances (15,909 authored props, with 37 two-material plants). Each group has two geometry detail levels. The spawn selection is 365 primitive instances and 365,594 triangles, compared with 5.9 million prop triangles in the first unrefined distance selection. Imported nodes are disposed after batching. A source-to-instance transformed-vertex comparison found zero error. The seating audit covers 346 nearby material primitives and found no lowest vertices more than 20 cm above ground. Details are in `reports/desert-placement.json`.
+
+Validation: production build, four unit tests and five WebGPU browser tests pass. The new test checks instance/LOD counts, source-transform agreement, ground exclusion, moving instance buffers, continued terrain grounding and desert-prop removal/restoration across biome switches. Screenshots of spawn and nearby planting were inspected.
 
 ## Subsequent biome work
 

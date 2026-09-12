@@ -15,7 +15,7 @@ looking and moving. Destinations use the Rev B register coordinates with elevati
 sampled from the terrain. Switching resets movement, cloth, effects and the camera.
 
 The Exalted map stays at scale 1 (one unit per metre), with bounds
-1,872 × 1,404 m. Spawn is chart `(65, -604)`, or Babylon `(-65, height, 604)`,
+1,872 × 1,404 m. Spawn is chart `(65, -616)`, or Babylon `(-65, height, 616)`,
 facing north. The loader's complete coordinate transform is baked once into the
 mesh, including normals and triangle winding. The procedural sky mountains are
 disabled for this scene so they do not change Exalted's skyline.
@@ -35,8 +35,8 @@ layer. Tracks remain temporary in the existing moving GPU simulation window.
 
 Painted terrain colours identify snow and sand; roads, trails, grass, forest
 and rock stay firm. Sand uses 55% of snow's brush depth, smaller raised rims,
-three-times-faster refill, and warm dust/wake shading. Desert Start is on a
-road fork: move backwards or west onto the adjacent sand to make footprints.
+three-times-faster refill, and warm dust/wake shading. Desert Start is on
+loose sand, 12 m south of the authored road fork, so walking immediately leaves footprints.
 Choose The Palecrown to compare snow tracks. Footsteps, sliding and deformation
 brushes from spells share this surface system; reflective spell ice still needs
 its Exalted reflection-mask integration.
@@ -45,7 +45,24 @@ Feet and camera add a small GPU displacement readback to the original triangle
 height. A 128-square probe covers 16 m and updates at most ten times per second;
 grounding therefore follows recent deformation with asynchronous latency.
 This is suitable for these shallow tracks, not a synchronous collision solver.
-The dressed desert GLB remains a separate next task; its props are not loaded yet.
+The desert's plants and rocks now load from `exalted_desert.glb`, preserving
+authored placement. Its separate ground is excluded. Twenty-three shared
+geometry/material groups use GPU thin instances, each with original and simplified
+distant geometry. Small stones fade at 28–35 m, shrubs at 48–60 m, and larger
+props at longer size-based ranges up to 180 m. Instance selections update after
+3 m of movement; original detail is retained within 16 m (30 m for larger props).
+The materials use authored base-colour, normal and roughness textures with
+Snowflow lighting, spell lights and aerial perspective. Vegetation uses alpha
+cutouts consistently in beauty, shadows and depth, including source materials
+exported as alpha blending. Props are visual dressing; obstacle collisions are
+not implemented.
+
+At Desert Start, the final selection contains 365 primitive instances and
+365,594 prop triangles. See `reports/desert-placement.json` for placement checks
+and `reports/terrain-with-desert-props.json` for all seven spawn measurements.
+Run `node scripts/inspect-desert.mjs` against the dev server to repeat the audit
+and save a spawn screenshot. Original source transforms remain unchanged:
+the audit flags 15 nearby rocks with deeply buried bases for review.
 
 Validation: `npm test` checks surface queries; `npm run test:browser` checks the
 WebGPU scene, movement, imported bounds, and grounding against independent Babylon

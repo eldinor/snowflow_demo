@@ -32,6 +32,7 @@ import { Sky } from "./render/sky.js";
 import { ShadowSystem } from "./render/shadows.js";
 import { Terrain } from "./terrain/terrain.js";
 import { EXALTED_SPAWN } from "./terrain/exaltedWorld.js";
+import { DesertProps } from './world/desertProps.js';
 import { DepthPass } from "./render/depthPass.js";
 import { PostChain } from "./post/postChain.js";
 import { whenReady } from "./core/gpuUtil.js";
@@ -150,6 +151,12 @@ async function boot() {
     await terrain.build();
     onChange("showTerrain", (v) => (terrain.mesh.isVisible = v));
     terrain.registerPrepass(depthPass);
+    let desertProps = null;
+    if (exalted) {
+        await loading.phase('loading desert vegetation and rocks', 0.50);
+        desertProps = new DesertProps(scene, terrain, sky, shadows, depthPass);
+        await desertProps.load();
+    }
 
     await loading.phase("placing character", 0.62);
 
@@ -187,6 +194,7 @@ async function boot() {
     );
     // Every surface a spell can light.
     spells.addConsumers(
+        ...(desertProps?.materials || []),
         ...terrain.materials, figure.bodyMat, figure.clothMat,
         wake.material, spray.material
     );
@@ -209,6 +217,8 @@ async function boot() {
     sky.render(rig, 0);
     await terrain.warmUp();
     terrain.update(rig.camera.position, character.position, 0);
+    desertProps?.update(rig.camera.position, character.position, true);
+    await desertProps?.warmUp();
     figure.update(0);
     figure.sync(rig.camera.position);
     await figure.warmUp();
@@ -308,6 +318,7 @@ async function boot() {
         spells.update(dt, rig.camera.position);
         const tSpells = performance.now();
         terrain.update(rig.camera.position, character.position, dt);
+        desertProps?.update(rig.camera.position, character.position);
         const tTerrain = performance.now();
         // After the shadow refit, so the figure's uniforms carry this frame's
         // cascade matrices rather than last frame's.
@@ -335,6 +346,7 @@ async function boot() {
 
         endFrameDraws();
         stats.triangles =
+            (desertProps?.triangles || 0) +
             (terrain.mesh.metadata ? terrain.mesh.metadata.triangles : 0) +
             (terrain.local?.mesh.metadata.triangles || 0) +
             (S.showCharacter ? figure.triangles : 0) +
@@ -357,6 +369,7 @@ async function boot() {
         engine, scene, rig, character, figure, contact, spray, wake, spells,
         overlay, terrain, sky, shadows, post, depthPass, spawnBar,
         S, input, perfStats: stats,
+        desertProps,
     };
 }
 

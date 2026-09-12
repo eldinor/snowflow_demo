@@ -1,7 +1,8 @@
 // Coordinates and names: Exalted Map Reference Rev B / places_register.json.
 // These are player inspection points at named places, not new Cube spawns.
 export const SPAWN_POINTS = Object.freeze([
-    { id: "desert-start", name: "Desert Start", biome: "Desert", x: 65, y: -604, yaw: Math.PI },
+    // 12 m south of the authored road-fork spawn, on loose sand for immediate footprints.
+    { id: "desert-start", name: "Desert Start", biome: "Desert", x: 65, y: -616, yaw: Math.PI },
     { id: "C5", name: "The Palecrown", biome: "Snow", x: -218, y: 251, yaw: 0 },
     { id: "C3", name: "The Long Green", biome: "Grassland", x: 310, y: 0, yaw: Math.PI },
     { id: "C2", name: "The Thornwood", biome: "Forest", x: 767, y: -104, yaw: 0.8 },

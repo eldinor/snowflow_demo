@@ -25,4 +25,30 @@ visible scene geometry, not the sum of repeated shadow/depth work.
 
 Deformation adds a measurable cost, especially in snow; this change does not
 establish a 60 fps budget. The next performance work should measure GPU pass times
-on target hardware and include authored desert props with instancing/culling.
+on target hardware.
+
+## Authored desert props
+
+`terrain-with-desert-props.json` repeats the same seven-spawn capture after adding
+plants and rocks. Desert Start measured **41.1 ms median / 47.6 ms p95**, with
+**126 total draw calls** and **774,879 scene triangles**. The earlier terrain-only
+capture was 35.5 / 44.8 ms, 31 calls and 409,285 triangles. These captures were
+made at different times and are indicative, not an isolated GPU-cost measurement.
+
+The final prop selection adds **365 primitive instances / 365,594 triangles**.
+There are 23 geometry/material groups, each split into near and distant meshes;
+19 meshes are active at spawn. Each active mesh participates in beauty, depth
+and three shadow passes, accounting for 95 extra calls. Materials and authored
+transforms are shared; they are not 365 separate scene objects.
+
+Distant LODs target 15% of original triangles with a 2.5% relative geometry-error
+limit; actual reductions vary with topology. Originals remain close to the
+avatar. Small stones and shrubs use shorter visibility ranges than trees and
+boulders. The initial broad-range, full-detail pass submitted 5,936,484 prop
+triangles at spawn; the final selection reduces that by approximately 94%.
+
+The load/batching/LOD audit took about 2.5 seconds in its capture, excluding later
+shader warm-up. The source GLB remains about 31.7 MB. `desert-placement.json`
+records individual seating checks, instance counts, LOD errors and distances.
+All six other navigation destinations had zero active desert props in the
+measurement; their draw counts match the terrain-only scene.

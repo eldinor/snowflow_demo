@@ -36,6 +36,7 @@ test("Exalted GLB renders, grounds the avatar, and preserves the snow reference"
             groundY: terrain.heightAt(character.position.x, character.position.z),
             yaw: rig.yaw, mountains: S.showMountains, maxError,
             sideOrientation: terrain.mesh.sideOrientation,
+            sand: terrain.heightfield.weightsAt(character.position.x, character.position.z)[1],
         };
     });
     expect(state.source).toContain("alpha-map.glb");
@@ -45,16 +46,17 @@ test("Exalted GLB renders, grounds the avatar, and preserves the snow reference"
     expect(state.min[2]).toBeCloseTo(-702);
     expect(state.max[2]).toBeCloseTo(702);
     expect(state.position[0]).toBeCloseTo(-65);
-    expect(state.position[2]).toBeCloseTo(604);
-    expect(state.groundY).toBeCloseTo(4.8, 0);
+    expect(state.position[2]).toBeCloseTo(616);
+    expect(state.groundY).toBeCloseTo(5.17, 1);
     expect(state.position[1]).toBeCloseTo(state.groundY, 2);
     expect(state.yaw).toBeCloseTo(Math.PI);
     expect(state.mountains).toBe(false);
     expect(state.sideOrientation).toBe(0);
+    expect(state.sand).toBe(1);
     expect(state.maxError).toBeLessThan(0.001);
     await page.screenshot({ path: testInfo.outputPath("exalted-spawn.png") });
     await page.keyboard.down("KeyW");
-    await page.waitForFunction(() => SNOWFLOW.character.position.z < 603);
+    await page.waitForFunction(() => SNOWFLOW.character.position.z < 615);
     await page.keyboard.up("KeyW");
     await page.getByRole("button", { name: "The Palecrown, Snow", exact: true }).click();
     await expect.poll(() => page.evaluate(() => Math.abs(SNOWFLOW.rig.pivot.z + 251))).toBeLessThan(1);
@@ -77,7 +79,7 @@ test("spawn bar switches named biomes, resets motion and supports keyboard and s
     await page.goto("/");
     await page.waitForFunction(() => globalThis.SNOWFLOW, null, { timeout: 120_000 });
     const points = [
-        ["Desert Start, Desert", -65, 604],
+        ["Desert Start, Desert", -65, 616],
         ["The Palecrown, Snow", 218, -251],
         ["The Long Green, Grassland", -310, 0],
         ["The Thornwood, Forest", -767, 104],
