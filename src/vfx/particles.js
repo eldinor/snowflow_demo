@@ -77,6 +77,7 @@ export class SprayField {
         this.seed = new Float32Array(CAPACITY);
         /** 0 = powder puff, 1 = heavy clod. Drives edge hardness and opacity. */
         this.kind = new Float32Array(CAPACITY);
+        this.sand = new Float32Array(CAPACITY);
         /**
          * Linear drag coefficient, 1/s. Separate from `kind` on purpose.
          *
@@ -111,6 +112,12 @@ export class SprayField {
 
         this._camPos = new Vector3();
         this._t = 0;
+    }
+
+    reset() {
+        this.life.fill(0);
+        this.liveCount = this._next = 0;
+        this.mesh.isVisible = false;
     }
 
     _makeMaterial() {
@@ -177,6 +184,8 @@ export class SprayField {
         this.life[i] = life;
         this.size[i] = size;
         this.kind[i] = kind;
+        this.sand[i] = this.terrain.exalted && this.terrain.heightfield.weightsAt(x, z)[1] > 0.5 ? 1 : 0;
+        if (this.sand[i] > 0.5) { this.size[i] *= 0.7; this.life[i] *= 0.8; }
         this.drag[i] = drag === undefined ? (kind > 0.5 ? 1.1 : 5.2) : drag;
         this.seed[i] = (i * 0.618033 + x * 0.137 + z * 0.311) % 1;
     }
@@ -249,7 +258,7 @@ export class SprayField {
             d[to + 3] = this.size[i] * grow;
             d[t1] = a01;
             d[t1 + 1] = this.seed[i];
-            d[t1 + 2] = this.kind[i];
+            d[t1 + 2] = this.kind[i] + this.sand[i] * 2;
             d[t1 + 3] = alpha;
             live++;
         }

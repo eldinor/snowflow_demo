@@ -111,6 +111,15 @@ export class CharacterController {
      * @param {number} dt
      * @param {import("../core/camera.js").CameraRig} rig
      */
+    teleport(x, z, facing) {
+        // Keep the controller identity used by the figure and spell context.
+        Object.assign(this, new CharacterController(this.terrain));
+        this.position.set(x, this.terrain.heightAt(x, z), z);
+        this.facing = facing;
+        this.groundY = this.position.y;
+        this.terrain.normalAt(x, z, this.groundNormal);
+    }
+
     update(dt, rig) {
         const h = Math.min(dt, 1 / 30);
 
@@ -129,6 +138,8 @@ export class CharacterController {
         // ---------------------------------------------------- integrate + snap
         this.position.x += this.velocity.x * h;
         this.position.z += this.velocity.z * h;
+        // Clamp before grounding so border frames sample the final position.
+        this.terrain.heightfield?.clampToPlayArea(this.position);
 
         this.groundY = this.terrain.heightAt(this.position.x, this.position.z);
         this.terrain.normalAt(this.position.x, this.position.z, this.groundNormal);
@@ -139,8 +150,8 @@ export class CharacterController {
         this.speed = Math.hypot(this.velocity.x, this.velocity.z);
         this.speed01 = Scalar.Clamp(this.speed / SURF_MAX, 0, 1);
 
-        this.acceleration.x = (this.velocity.x - this.prevVelocity.x) / h;
-        this.acceleration.z = (this.velocity.z - this.prevVelocity.z) / h;
+        this.acceleration.x = (this.velocity.x - this.prevVelocity.x) / Math.max(h, 1e-6);
+        this.acceleration.z = (this.velocity.z - this.prevVelocity.z) / Math.max(h, 1e-6);
 
         // Lateral acceleration → lean. Project accel onto the character's right.
         const rx = Math.cos(this.facing);

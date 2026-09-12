@@ -330,6 +330,13 @@ export class SpellSystem {
         }
     }
 
+    reset() {
+        this._cancelAll();
+        this.castBlend = 0;
+        this._lastCast = -Infinity;
+        this.crystals.finishWarmUp();
+    }
+
     _cancelAll() {
         for (let i = 0; i < this.spells.length; i++) this.spells[i].cancel();
     }

@@ -338,6 +338,13 @@ export class Character {
      *
      * @param {number} dt
      */
+    resetPose() {
+        // Preserve the Figure object referenced by contacts and spells.
+        Object.assign(this.figure, new Figure(this.terrain));
+        this._needSettle = true;
+        this.update(0);
+    }
+
     update(dt) {
         const ch = this.controller;
         this.figure.update(dt, ch);

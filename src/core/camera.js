@@ -96,6 +96,20 @@ export class CameraRig {
     }
 
     /** @param {number} amount 0..1 */
+    teleport(target, yaw) {
+        this._first = true;
+        this.pivotVel.setAll(0);
+        this.yaw = yaw;
+        this.pitch = 0.17;
+        this.roll = this.rollTarget = this.trauma = this.groundLift = 0;
+        this.fov = this.baseFov;
+        this.distance = this.distanceTarget = 6.2;
+        this.update(0, target, Vector3.Zero(), 0, 0);
+        // The regular arm lift is eased; a teleport must clear nearby slopes now.
+        this._snapGround = true;
+        this.update(0, target, Vector3.Zero(), 0, 0);
+    }
+
     addTrauma(amount) {
         this.trauma = Math.min(1, this.trauma + amount);
     }
@@ -193,9 +207,10 @@ export class CameraRig {
                 if (d > need) need = d;
             }
 
-            this.groundLift = expDamp(
+            this.groundLift = this._snapGround ? need : expDamp(
                 this.groundLift, need, need > this.groundLift ? 26 : 4.5, dt
             );
+            this._snapGround = false;
             _desired.y += this.groundLift;
         }
 

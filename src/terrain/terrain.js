@@ -2,8 +2,8 @@
  * Terrain system: owns the heightfield, the clipmap mesh, the snow material,
  * the shadow-pass materials and the generated detail map.
  *
- * Per frame this uploads a handful of uniforms and nothing else. No geometry is
- * rebuilt, no buffer is re-uploaded, nothing is allocated.
+ * The procedural clipmap has fixed geometry. Exalted replaces nearby soft
+ * triangles with a reusable detail mesh, updating its patch every eight metres.
  */
 
 import { Vector2, Vector3, Vector4 } from "@babylonjs/core/Maths/math.vector";
@@ -12,6 +12,10 @@ import { ShaderMaterial } from "@babylonjs/core/Materials/shaderMaterial";
 import { ShaderLanguage } from "@babylonjs/core/Materials/shaderLanguage";
 import { ProceduralTexture } from "@babylonjs/core/Materials/Textures/Procedurals/proceduralTexture";
 import { Constants } from "@babylonjs/core/Engines/constants";
+import { Mesh } from "@babylonjs/core/Meshes/mesh";
+import { ExaltedWorld } from "./exaltedWorld.js";
+import { LocalTerrain } from './localTerrain.js';
+import { GroundProbe } from './groundProbe.js';
 
 import { Heightfield, WORLD_SIZE } from "./heightfield.js";
 import { DeformationField } from "./deformation.js";
@@ -44,12 +48,13 @@ export class Terrain {
      * @param {import("../render/sky.js").Sky} sky
      * @param {import("../render/shadows.js").ShadowSystem} shadows
      */
-    constructor(scene, sky, shadows) {
+    constructor(scene, sky, shadows, { exalted = false } = {}) {
         this.scene = scene;
         this.sky = sky;
         this.shadows = shadows;
 
-        this.heightfield = new Heightfield(scene);
+        this.exalted = exalted;
+        this.heightfield = exalted ? new ExaltedWorld(scene) : new Heightfield(scene);
 
         /** The terrain state buffer. Feet, the surf wake and every spell write here. */
         this.deform = new DeformationField(scene);
@@ -73,9 +78,10 @@ export class Terrain {
         this.detailTex.wrapV = Constants.TEXTURE_WRAP_ADDRESSMODE;
         this.detailTex.refreshRate = 0;
 
-        this.mesh = buildClipmapMesh(scene);
+        this.mesh = exalted ? new Mesh("exaltedTerrain", scene) : buildClipmapMesh(scene);
 
         this.material = this._makeSnowMaterial();
+        this.materials = [this.material];
         this.mesh.material = this.material;
 
         // One depth material per cascade, so each can carry its own matrix
@@ -85,15 +91,16 @@ export class Terrain {
         this.setDeformTexture(this.deform.texture);
     }
 
-    _makeSnowMaterial() {
+    _makeSnowMaterial(local = false) {
         const mat = new ShaderMaterial(
             "snow",
             this.scene,
-            { vertex: "snow", fragment: "snow" },
+            { vertex: this.exalted ? "exalted" : "snow", fragment: "snow" },
             {
-                attributes: ["position"],
+                attributes: this.exalted && !local ? ["position", "normal", "color"] : ["position"],
+                defines: this.exalted ? ["EXALTED_TERRAIN", ...(local ? ['LOCAL_DETAIL'] : [])] : [],
                 uniforms: [
-                    "viewProjection", "cameraPos", "lodCenter",
+                    "viewProjection", "cameraPos", "lodCenter", "patchCenter",
                     "baseSpacing", "gridHalfN",
                     "worldOrigin", "worldSize", "heightRes",
                     "windAngle", "macroAmp", "sastrugiAmp",
@@ -109,7 +116,7 @@ export class Terrain {
                     ...SPELL_LIGHT_UNIFORMS,
                 ],
                 samplers: [
-                    "heightTex", "auxTex", "detailTex", "skyLUT",
+                    "heightTex", "auxTex", "detailTex", "skyLUT", "patchTex",
                     "cascade0", "cascade1", "cascade2", "deformTex",
                 ],
                 shaderLanguage: ShaderLanguage.WGSL,
@@ -136,50 +143,52 @@ export class Terrain {
      * Babylon binds from the active camera, and which by then carries this
      * frame's temporal jitter.
      */
-    makePrepassMaterial() {
+    makePrepassMaterial(local = false) {
         const mat = new ShaderMaterial(
             "terrainPrepass",
             this.scene,
-            { vertex: "terrainPrepass", fragment: "prepass" },
+            { vertex: this.exalted ? "exaltedPrepass" : "terrainPrepass", fragment: "prepass" },
             {
                 attributes: ["position"],
+                defines: local ? ['LOCAL_DETAIL'] : [],
                 uniforms: [
-                    "viewProjection", "cameraPos", "lodCenter",
+                    "viewProjection", "cameraPos", "lodCenter", "patchCenter",
                     "baseSpacing", "gridHalfN",
                     "worldOrigin", "worldSize", "heightRes",
                     "windAngle", "sastrugiAmp",
                     "deformCenter", "deformSize", "deformDepthScale",
                 ],
-                samplers: ["heightTex", "auxTex", "deformTex"],
+                samplers: ["heightTex", "auxTex", "deformTex", "patchTex"],
                 shaderLanguage: ShaderLanguage.WGSL,
             }
         );
         mat.backFaceCulling = false;
         mat.setTexture("heightTex", this.heightfield.heightTex);
         mat.setTexture("auxTex", this.heightfield.auxTex);
-        this.prepassMat = mat;
+        if (local) { this.localPrepassMat = mat; mat.setTexture('patchTex', this.local.texture); }
+        else this.prepassMat = mat;
         return mat;
     }
 
-    _makeDepthMaterial(cascade) {
+    _makeDepthMaterial(cascade, local = false) {
         const mat = new ShaderMaterial(
             "terrainDepth" + cascade,
             this.scene,
-            { vertex: "terrainDepth", fragment: "terrainDepth" },
+            { vertex: this.exalted ? "exaltedDepth" : "terrainDepth", fragment: "terrainDepth" },
             {
                 attributes: ["position"],
                 uniforms: [
-                    "lightViewProjection", "cameraPos", "lodCenter",
+                    "lightViewProjection", "cameraPos", "lodCenter", "patchCenter",
                     "baseSpacing", "gridHalfN",
                     "worldOrigin", "worldSize", "heightRes",
                     "windAngle", "sastrugiAmp",
                     "deformCenter", "deformSize", "deformDepthScale",
                 ],
-                samplers: ["heightTex", "auxTex", "deformTex"],
+                samplers: ["heightTex", "auxTex", "deformTex", "patchTex"],
                 shaderLanguage: ShaderLanguage.WGSL,
                 // Forces a distinct Effect per cascade, so each can carry its
                 // own light matrix without mid-frame uniform swapping.
-                defines: ["SNOW_CASCADE " + cascade],
+                defines: ["SNOW_CASCADE " + cascade, ...(local ? ['LOCAL_DETAIL'] : [])],
             }
         );
         mat.backFaceCulling = false;
@@ -187,6 +196,7 @@ export class Terrain {
         mat.setTexture("auxTex", this.heightfield.auxTex);
         if (!this._depthMats) this._depthMats = [];
         this._depthMats.push(mat);
+        if (local) mat.setTexture('patchTex', this.local.texture);
         return mat;
     }
 
@@ -197,7 +207,20 @@ export class Terrain {
         this.detailTex.setFloat("grainScale", 0.013);
         await bakeOnce(this.detailTex, "detailBake");
 
-        await this.heightfield.bake();
+        if (this.exalted) await this.heightfield.loadInto(this.mesh);
+        else await this.heightfield.bake();
+        if (this.exalted) {
+            this.local = new LocalTerrain(this.scene, this.heightfield, this.mesh);
+            this.localMaterial = this._makeSnowMaterial(true);
+            this.localMaterial.setTexture('patchTex', this.local.texture);
+            this.local.mesh.material = this.localMaterial;
+            this.materials.push(this.localMaterial);
+            this.local.update({ x: -65, z: 604 });
+            this.shadows.registerCaster(this.local.mesh, c => this._makeDepthMaterial(c, true));
+            this.deform.surfaceWeightsAt = (x, z) => this.heightfield.weightsAt(x, z);
+            this.deform.setSurfaceMap(this.heightfield.surfaceMap, this.heightfield.origin, this.heightfield.extent);
+            this.groundProbe = new GroundProbe(this.scene, this);
+        }
 
         // The cascade fitter needs the world's vertical extent to size each
         // light volume's depth range. A margin covers carved berms and anything
@@ -220,12 +243,16 @@ export class Terrain {
         this.setDeformTexture(this.deform.texture);
 
         await whenReady(this.material, "snow material", [this.mesh, false]);
+        if (this.local) {
+            await whenReady(this.localMaterial, 'local terrain', [this.local.mesh, false]);
+            await this.groundProbe.warmUp();
+        }
         if (this.prepassMat) {
             await whenReady(this.prepassMat, "terrain prepass", [this.mesh, false]);
         }
         if (this._depthMats) {
             for (let i = 0; i < this._depthMats.length; i++) {
-                await whenReady(this._depthMats[i], "terrainDepth" + i, [this.mesh, false]);
+                await whenReady(this._depthMats[i], "terrainDepth" + i, [i >= 3 && this.local ? this.local.mesh : this.mesh, false]);
             }
         }
     }
@@ -238,6 +265,8 @@ export class Terrain {
     setDeformTexture(tex) {
         this._boundDeform = tex;
         this.material.setTexture("deformTex", tex);
+        this.localMaterial?.setTexture('deformTex', tex);
+        this.localPrepassMat?.setTexture('deformTex', tex);
         if (this._depthMats) {
             for (let i = 0; i < this._depthMats.length; i++) {
                 this._depthMats[i].setTexture("deformTex", tex);
@@ -258,9 +287,12 @@ export class Terrain {
      * @param {number} dt seconds
      */
     update(cameraPos, focus, dt) {
-        const m = this.material;
         const hf = this.heightfield;
         const windAngle = (S.windDirection * Math.PI) / 180;
+        if (this.local) {
+            this.local.update(focus);
+            this.local.mesh.isVisible = S.showTerrain && this.local.triangleCount > 0;
+        }
 
         // Simulate first, then bind: the material must sample the target that
         // was written this frame, not the one from last frame, or every mark
@@ -277,6 +309,8 @@ export class Terrain {
         // `placeClipmapVertex` snaps per ring already.
         _lod.set(focus.x, focus.z);
 
+        for (const m of this.materials) {
+        if (this.local) m.setVector2('patchCenter', this.local.focus);
         m.setVector3("cameraPos", cameraPos);
         m.setVector2("lodCenter", _lod);
         m.setFloat("baseSpacing", BASE_SPACING);
@@ -329,11 +363,13 @@ export class Terrain {
         );
         m.setVector2("screenSize", _screen);
         m.wireframe = S.wireframe;
+        }
 
         // ---- depth prepass ----------------------------------------------
         // Same clipmap parameters as everything else, for the same reason.
-        const pm = this.prepassMat;
+        for (const pm of [this.prepassMat, this.localPrepassMat]) {
         if (pm) {
+            if (this.local) pm.setVector2('patchCenter', this.local.focus);
             pm.setVector3("cameraPos", cameraPos);
             pm.setVector2("lodCenter", _lod);
             pm.setFloat("baseSpacing", BASE_SPACING);
@@ -347,6 +383,7 @@ export class Terrain {
             pm.setFloat("deformSize", deformSize);
             pm.setFloat("deformDepthScale", S.deformDepth);
         }
+        }
 
         // ---- shadow-pass materials --------------------------------------
         // These must see the identical clipmap parameters, or the depth pass
@@ -355,6 +392,7 @@ export class Terrain {
         if (dm) {
             for (let i = 0; i < dm.length; i++) {
                 const d = dm[i];
+                if (this.local) d.setVector2('patchCenter', this.local.focus);
                 d.setVector3("cameraPos", cameraPos);
                 d.setVector2("lodCenter", _lod);
                 d.setFloat("baseSpacing", BASE_SPACING);
@@ -369,19 +407,35 @@ export class Terrain {
                 d.setFloat("deformDepthScale", S.deformDepth);
             }
         }
+        this.groundProbe?.update(focus);
+    }
+
+    registerPrepass(pass) {
+        pass.registerCaster(this.mesh, this.makePrepassMaterial());
+        if (this.local) pass.registerCaster(this.local.mesh, this.makePrepassMaterial(true));
     }
 
     /** @param {number} x @param {number} z */
     heightAt(x, z) {
-        return this.heightfield.heightAt(x, z);
+        return this.heightfield.heightAt(x, z) + (this.groundProbe?.heightAt(x, z) || 0);
     }
 
     /** @param {number} x @param {number} z @param {Vector3} out */
     normalAt(x, z, out) {
-        return this.heightfield.normalAt(x, z, out);
+        this.heightfield.normalAt(x, z, out);
+        if (this.groundProbe) {
+            const e = 0.125, g = this.groundProbe;
+            const gx = -out.x / Math.max(out.y, 0.001) + (g.heightAt(x + e, z) - g.heightAt(x - e, z)) / (2 * e);
+            const gz = -out.z / Math.max(out.y, 0.001) + (g.heightAt(x, z + e) - g.heightAt(x, z - e)) / (2 * e);
+            out.set(-gx, 1, -gz).normalize();
+        }
+        return out;
     }
 
     dispose() {
+        this.local?.dispose();
+        this.groundProbe?.dispose();
+        this.localMaterial?.dispose();
         this.mesh.dispose();
         this.material.dispose();
         this.detailTex.dispose();

@@ -19,6 +19,8 @@
 // -----------------------------------------------------------------------------
 
 #include<snowNoise>
+#include<surfaceMap>
+uniform useSurfaceMap: f32;
 #include<snowShading>
 #include<snowSpellLights>
 #include<snowAtmosphere>
@@ -136,7 +138,9 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
 
     // ------------------------------------------------------------- material
     // Freshly displaced snow: brighter and rougher than the pack it came out of.
-    let albedo = vec3f(0.895, 0.920, 0.965);
+    var sand = 0.0;
+    if (uniforms.useSurfaceMap > 0.5) { sand = mappedSurface(world.xz).y; }
+    let albedo = mix(vec3f(0.895, 0.920, 0.965), vec3f(0.83, 0.66, 0.39), sand);
     let roughness = 0.80;
     let f0 = vec3f(0.026);
 
@@ -202,7 +206,7 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
     // tint reaches the blue end at a lower thickness. Together those keep the
     // backlit glow reading as light coming *through snow* rather than as the sun
     // reflecting off something tan.
-    let sss = snowSubsurface(N, L, V, sun, thickness, uniforms.sssStrength * 0.45, 1.5);
+    let sss = snowSubsurface(N, L, V, sun, thickness, uniforms.sssStrength * 0.45 * (1.0 - sand), 1.5);
     let sssTerm = sss * albedo * mix(0.18, 1.0, shadow);
     color += sssTerm;
 

@@ -25,6 +25,10 @@ import waterLib from "./lib/water.wgsl?raw";
 import crystalLib from "./lib/crystal.wgsl?raw";
 import postCommonLib from "./lib/postCommon.wgsl?raw";
 import ridgeLib from "./lib/ridge.wgsl?raw";
+import { surfaceWGSL } from '../terrain/surfaceTypes.js';
+import exaltedSurface from './lib/exaltedSurface.wgsl?raw';
+import surfaceMap from './lib/surfaceMap.wgsl?raw';
+import groundProbe from './groundProbe.fragment.wgsl?raw';
 
 import heightBakeFrag from "./heightBake.fragment.wgsl?raw";
 import auxBakeFrag from "./auxBake.fragment.wgsl?raw";
@@ -33,6 +37,9 @@ import skyBakeFrag from "./skyBake.fragment.wgsl?raw";
 import deformSimFrag from "./deformSim.fragment.wgsl?raw";
 
 import snowVert from "./snow.vertex.wgsl?raw";
+import exaltedVert from "./exalted.vertex.wgsl?raw";
+import exaltedDepthVert from "./exaltedDepth.vertex.wgsl?raw";
+import exaltedPrepassVert from "./exaltedPrepass.vertex.wgsl?raw";
 import snowFrag from "./snow.fragment.wgsl?raw";
 import depthVert from "./terrainDepth.vertex.wgsl?raw";
 import depthFrag from "./terrainDepth.fragment.wgsl?raw";
@@ -68,6 +75,9 @@ import crystalPrepassVert from "./crystalPrepass.vertex.wgsl?raw";
 
 
 const INCLUDES = {
+    surfaceTypes: surfaceWGSL,
+    exaltedSurface,
+    surfaceMap,
     snowNoise: noiseLib,
     snowTerrain: terrainLib,
     snowShading: shadingLib,
@@ -85,6 +95,7 @@ const INCLUDES = {
 };
 
 const SHADERS = {
+    groundProbePixelShader: groundProbe,
     heightBakePixelShader: heightBakeFrag,
     auxBakePixelShader: auxBakeFrag,
     detailBakePixelShader: detailBakeFrag,
@@ -92,6 +103,9 @@ const SHADERS = {
     deformSimPixelShader: deformSimFrag,
 
     snowVertexShader: snowVert,
+    exaltedVertexShader: exaltedVert,
+    exaltedDepthVertexShader: exaltedDepthVert,
+    exaltedPrepassVertexShader: exaltedPrepassVert,
     snowPixelShader: snowFrag,
 
     terrainDepthVertexShader: depthVert,

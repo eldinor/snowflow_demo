@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test tests/meshSurface.test.js",
+    "test:browser": "playwright test"
   },
   "keywords": [
     "webgpu",
@@ -20,9 +22,11 @@
   "license": "MIT",
   "dependencies": {
     "@babylonjs/core": "^9.18.0",
+    "@babylonjs/loaders": "9.18.0",
     "@babylonjs/materials": "^9.18.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "vite": "^8.1.5"
   }
 }

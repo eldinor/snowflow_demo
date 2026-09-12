@@ -33,6 +33,16 @@ export const input = {
 
 const keys = Object.create(null);
 
+export function resetInput() {
+    for (const key in keys) keys[key] = false;
+    input.moveX = input.moveZ = input.lookX = input.lookY = input.zoomDelta = input.spellPressed = 0;
+    input.moving = input.surf = input.sprint = input.spellHeld2 = input.spellHeld7 = false;
+}
+
+function isUI(target) {
+    return target instanceof Element && !!target.closest("button, input, select, textarea, a, [contenteditable=true]");
+}
+
 const LOOK_SCALE = 0.0022;
 
 /** @type {(() => void)|null} */
@@ -94,7 +104,7 @@ export function initInput(canvas, hooks) {
             onToggleOverlay?.();
             return;
         }
-        if (e.repeat) return;
+        if (isUI(e.target) || e.repeat) return;
         keys[e.code] = true;
 
         const n = SPELL_KEYS[e.code];
@@ -133,6 +143,10 @@ const SPELL_KEYS = {
 
 /** Resolve held keys into movement axes. Called once per frame before update. */
 export function pollInput() {
+    if (isUI(document.activeElement) && !input.locked) {
+        resetInput();
+        return;
+    }
     let x = 0;
     let z = 0;
     if (keys.KeyW || keys.ArrowUp) z += 1;

@@ -204,6 +204,7 @@ export class Figure {
         /** 1 while the foot carries weight, 0 mid-swing. Eased. */
         this.footWeight = new Float32Array([1, 1]);
         this._wasStance = [true, true];
+        this._feetInitialized = false;
         /** Set for one frame when a foot touches down. Drives spray and splats. */
         this.touchdown = [false, false];
 
@@ -275,7 +276,7 @@ export class Figure {
         // The figure settles into the snow it is standing on. Reading the real
         // depth would mean a GPU readback; this is the same number the contact
         // brushes are writing, held on the CPU.
-        this.sink = damp(this.sink, 0.045 + surf * 0.055, 4, h);
+        this.sink = damp(this.sink, this.terrain.exalted ? 0.008 : 0.045 + surf * 0.055, 4, h);
 
         // ------------------------------------------------------------- spine
         const gx = ch.position.x;
@@ -373,6 +374,18 @@ export class Figure {
         const fwdX = Math.sin(ch.facing), fwdZ = Math.cos(ch.facing);
         const rgtX = Math.cos(ch.facing), rgtZ = -Math.sin(ch.facing);
 
+        // Spawns can be hundreds of metres from the origin. Seed the planted
+        // feet before the zero-dt warm-up pose and cloth settlement.
+        if (!this._feetInitialized) {
+            for (let f = 0; f < 2; f++) {
+                const side = f === 0 ? -0.105 : 0.105;
+                const x = ch.position.x + rgtX * side + fwdX * 0.02;
+                const z = ch.position.z + rgtZ * side + fwdZ * 0.02;
+                this.plant.set([x, this.terrain.heightAt(x, z) - this.sink * 0.7, z], f * 3);
+            }
+            this._feetInitialized = true;
+        }
+
         // Half a stride ahead, scaled by speed — this is the step length, and it
         // has to match the controller's stride or the feet skate.
         const half = 0.34 + 0.42 * run;
@@ -416,6 +429,9 @@ export class Figure {
                     );
                 }
                 this.footPos[f * 3] = this.plant[f * 3];
+                if (this.terrain.exalted) {
+                    this.plant[f * 3 + 1] = this.terrain.heightAt(this.plant[f * 3], this.plant[f * 3 + 2]) - this.sink * 0.7;
+                }
                 this.footPos[f * 3 + 1] = this.plant[f * 3 + 1];
                 this.footPos[f * 3 + 2] = this.plant[f * 3 + 2];
                 this.footWeight[f] = damp(this.footWeight[f], 1, 22, h);

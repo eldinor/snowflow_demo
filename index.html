@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>SNOWFLOW</title>
+<link rel="icon" href="data:," />
 <style>
     :root {
         /* Cool-shadow palette pulled from the Horizon reference. */
@@ -174,6 +175,11 @@
 </head>
 <body>
     <canvas id="view" tabindex="0"></canvas>
+    <header id="spawn-bar" hidden>
+        <div class="spawn-brand"><strong>EXALTED</strong><small>Esc to choose a place</small></div>
+        <nav aria-label="Spawn locations"></nav>
+        <span class="spawn-status" role="status" aria-live="polite"></span>
+    </header>
 
     <div id="hint">click to look &nbsp;·&nbsp; wasd to move &nbsp;·&nbsp; f1 for settings</div>
 

@@ -70,7 +70,8 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
     if (r2 > 1.0) { discard; }
 
     let state = input.vState;
-    let kind = state.z;
+    let sand = step(1.5, state.z);
+    let kind = state.z - sand * 2.0;
 
     // Break the disc's edge. A perfectly circular puff is the tell that gives
     // billboards away; a hashed radial wobble costs one noise fetch.
@@ -108,7 +109,7 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
 
     // Snow crystals in air scatter almost isotropically at the surface and very
     // strongly forward through the volume, so both terms are needed.
-    let albedo = vec3f(0.92, 0.94, 0.98);
+    let albedo = mix(vec3f(0.92, 0.94, 0.98), vec3f(0.74, 0.54, 0.29), sand);
     let diff = wrapDiffuse(dot(N, L), 0.75);
     var color = albedo * INV_PI * sun * diff * shadow;
 

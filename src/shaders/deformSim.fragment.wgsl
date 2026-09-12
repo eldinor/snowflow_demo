@@ -28,6 +28,8 @@
 // -----------------------------------------------------------------------------
 
 #include<snowNoise>
+#include<surfaceMap>
+uniform useSurfaceMap: f32;
 
 varying vUV: vec2f;
 
@@ -78,6 +80,9 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
     let size = uniforms.size;
     let dt = uniforms.dt;
     let world = texelWorld(uv, uniforms.center, size);
+    var surface = vec2f(1.0, 0.0);
+    if (uniforms.useSurfaceMap > 0.5) { surface = mappedSurface(world); }
+    let refill = uniforms.refillRate * mix(1.0, 3.0, surface.y);
 
     var dep = 0.0;
     var berm = 0.0;
@@ -115,7 +120,7 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
         // Loose piled snow slumps faster than a compacted trench floor, so the
         // berm channel gets three times the depression's rate. That difference is
         // what makes a trail soften from its edges inward.
-        let k = clamp(uniforms.refillRate * dt, 0.0, 1.0);
+        let k = clamp(refill * dt, 0.0, 1.0);
         let kDep = min(0.22, 0.004 * k);
         let kBerm = min(0.22, 0.012 * k);
 
@@ -142,7 +147,7 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
         // depression does not evaporate — it has to diffuse away instead.
         //
         // Per second, like the diffusion above.
-        let slump = min(berm, dep) * min(0.6, 0.002 * uniforms.refillRate * dt);
+        let slump = min(berm, dep) * min(0.6, 0.002 * refill * dt);
         dep -= slump;
         berm -= slump;
 
@@ -167,7 +172,7 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
         // solid. Banking the time and spending it in steps of ~0.4 s puts each
         // multiply two ULPs clear of the noise floor, and the constants below now
         // mean what they say.
-        let r = uniforms.refillRate;
+        let r = refill;
         dep *= exp(-dt * r / 400.0);
         berm *= exp(-dt * r / 250.0);
         comp *= exp(-dt * r / 300.0);
@@ -243,6 +248,8 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
     berm = clamp(berm, 0.0, uniforms.maxBerm);
     comp = clamp(comp, 0.0, 1.0);
     ice = clamp(ice, 0.0, 1.0);
+    ice *= surface.x;
+    if (surface.x + surface.y < 0.01) { dep = 0.0; berm = 0.0; comp = 0.0; }
 
     fragmentOutputs.color = vec4f(dep, berm, comp, ice);
 }

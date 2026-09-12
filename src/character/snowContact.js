@@ -64,6 +64,12 @@ export class SnowContact {
     }
 
     /** @param {number} dt seconds */
+    reset() {
+        this._sinceSplat = 0;
+        this._prevX = this.character.position.x;
+        this._prevZ = this.character.position.z;
+    }
+
     update(dt) {
         const ch = this.character;
         const f = this.field;
@@ -130,6 +136,11 @@ export class SnowContact {
      * behind the heel as the weight rolls over it.
      */
     _kick(x, y, z, impact) {
+        const world = this.character.terrain.heightfield;
+        if (world.weightsAt) {
+            const weights = world.weightsAt(x, z);
+            if (weights[0] + weights[1] < 0.01) return;
+        }
         const sp = this.spray;
         if (!sp) return;
         const ch = this.character;

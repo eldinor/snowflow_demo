@@ -165,7 +165,7 @@ export class SurfWake {
             {
                 attributes: ["position"],
                 uniforms: [
-                    "viewProjection", "cameraPos",
+                    "viewProjection", "cameraPos", "useSurfaceMap", "surfaceOrigin", "surfaceExtent",
                     "wakeCount", "wakeCols", "wakeRows",
                     "sunDir", "sunRadiance", "shR",
                     "cascadeMatrices", "cascadeSplits", "cascadeParams",
@@ -175,7 +175,7 @@ export class SurfWake {
                     "glintIntensity", "glintGrazing", "wakeTime", "wakeDebug",
                     ...SPELL_LIGHT_UNIFORMS,
                 ],
-                samplers: ["wakeTex", "skyLUT", "cascade0", "cascade1", "cascade2"],
+                samplers: ["wakeTex", "skyLUT", "cascade0", "cascade1", "cascade2", "surfaceMap"],
                 shaderLanguage: ShaderLanguage.WGSL,
             }
         );
@@ -183,6 +183,11 @@ export class SurfWake {
         // through the holes torn in the lip.
         mat.backFaceCulling = false;
         mat.setTexture("wakeTex", this.dataTex);
+        const world = this.terrain.heightfield;
+        mat.setTexture('surfaceMap', world.surfaceMap || this.sky.lut);
+        mat.setVector2('surfaceOrigin', world.origin);
+        mat.setVector2('surfaceExtent', world.extent || world.origin);
+        mat.setFloat('useSurfaceMap', this.terrain.exalted ? 1 : 0);
         mat.setTexture("skyLUT", this.sky.lut);
         for (let i = 0; i < CASCADE_COUNT; i++) {
             mat.setTexture("cascade" + i, this.shadows.maps[i]);
@@ -251,6 +256,12 @@ export class SurfWake {
         mat.setFloat("wakeRows", ROWS);
         this.prepassMat = mat;
         depth.registerCaster(this.mesh, mat);
+    }
+
+    reset() {
+        this._head = this._count = this._odo = this._plumeOwed = this._driftOwed = 0;
+        this._active = false;
+        this.mesh.isVisible = false;
     }
 
     setEnabled(v) {

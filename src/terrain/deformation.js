@@ -145,6 +145,13 @@ export class DeformationField {
      * @param {number} [edge] 0..1 rim roughness; 0 is a clean bevel
      */
     brush(x, z, radius, depth, berm, compression, ice, yaw, elongation, edge) {
+        if (this.surfaceWeightsAt) {
+            const weights = this.surfaceWeightsAt(x, z);
+            if (weights[0] + weights[1] < 0.01) return;
+            depth *= weights[0] + weights[1] * 0.55;
+            berm *= weights[0] + weights[1] * 0.65;
+            ice *= weights[0];
+        }
         if (this._brushCount >= MAX_BRUSHES) return;
         if (radius <= 0) return;
 
@@ -225,6 +232,7 @@ export class DeformationField {
         pt.setFloat("maxDepth", 0.55 * S.deformDepth);
         pt.setFloat("maxBerm", 0.34 * S.deformBerm);
         pt.setFloat("windAngle", (S.windDirection * Math.PI) / 180);
+        pt.setFloat('useSurfaceMap', this.surfaceMap ? 1 : 0);
 
         pt.render();
 
@@ -247,6 +255,15 @@ export class DeformationField {
         this._brushDirty = false;
     }
 
+    setSurfaceMap(texture, origin, extent) {
+        this.surfaceMap = texture;
+        for (const target of this._targets) {
+            target.setTexture('surfaceMap', texture);
+            target.setVector2('surfaceOrigin', origin);
+            target.setVector2('surfaceExtent', extent);
+        }
+    }
+
     /**
      * Compile the pass and zero both targets, behind the loading screen.
      *
@@ -257,6 +274,14 @@ export class DeformationField {
      * special case that could rot.
      */
     async warmUp() {
+        if (!this.surfaceMap) {
+            // Unused in Snowflow mode, but WebGPU still requires a valid binding.
+            for (const target of this._targets) {
+                target.setTexture('surfaceMap', this.brushTex);
+                target.setVector2('surfaceOrigin', this.center);
+                target.setVector2('surfaceExtent', this.center);
+            }
+        }
         await whenReady(this._targets[0], "deform target 0");
         await whenReady(this._targets[1], "deform target 1");
 

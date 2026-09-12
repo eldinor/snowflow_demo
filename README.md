@@ -1,5 +1,66 @@
 # SNOWFLOW
 
+The default scene now uses Exalted's **`alpha-map.glb`** from the
+9 September 2026 world handoff, bundled at `public/assets/exalted/alpha-map.glb`.
+Its imported geometry and biome vertex colours define the world; Snowflow's
+procedural avatar, lighting and snow material remain the visual reference.
+Open `/?terrain=snowflow` to compare against the original procedural demo
+described below.
+
+Use the top bar to switch between **Desert Start** (the default), **The Palecrown**
+(snow), **The Long Green** (grassland), **The Thornwood** (forest), **The Ironspine**
+(mountains), **Lakeside Overlook** (lake viewpoint), and **Stone Gate** (pass).
+Press **Esc** to release the mouse and choose a place; click the scene to resume
+looking and moving. Destinations use the Rev B register coordinates with elevation
+sampled from the terrain. Switching resets movement, cloth, effects and the camera.
+
+The Exalted map stays at scale 1 (one unit per metre), with bounds
+1,872 × 1,404 m. Spawn is chart `(65, -604)`, or Babylon `(-65, height, 604)`,
+facing north. The loader's complete coordinate transform is baked once into the
+mesh, including normals and triangle winding. The procedural sky mountains are
+disabled for this scene so they do not change Exalted's skyline.
+
+Grounding samples the imported triangles through a spatial index, as requested
+because the separate collision mesh and analytic height function are unavailable.
+This follows the visible mesh, not the finer original world surface. The known
+road wall near Stone Gate remains part of the supplied terrain. This is terrain
+grounding, not a general obstacle or slope-limit physics system.
+
+Snow and loose desert sand now deform around the avatar. Nearby soft source
+triangles are replaced with subdivisions at approximately 17 cm spacing;
+the rest of `alpha-map.glb` retains its original geometry. Beauty, shadow and
+depth passes use the same displacement. The detail fades between 12 and 16 m
+from the avatar, joining the original triangle planes without a second ground
+layer. Tracks remain temporary in the existing moving GPU simulation window.
+
+Painted terrain colours identify snow and sand; roads, trails, grass, forest
+and rock stay firm. Sand uses 55% of snow's brush depth, smaller raised rims,
+three-times-faster refill, and warm dust/wake shading. Desert Start is on a
+road fork: move backwards or west onto the adjacent sand to make footprints.
+Choose The Palecrown to compare snow tracks. Footsteps, sliding and deformation
+brushes from spells share this surface system; reflective spell ice still needs
+its Exalted reflection-mask integration.
+
+Feet and camera add a small GPU displacement readback to the original triangle
+height. A 128-square probe covers 16 m and updates at most ten times per second;
+grounding therefore follows recent deformation with asynchronous latency.
+This is suitable for these shallow tracks, not a synchronous collision solver.
+The dressed desert GLB remains a separate next task; its props are not loaded yet.
+
+Validation: `npm test` checks surface queries; `npm run test:browser` checks the
+WebGPU scene, movement, imported bounds, and grounding against independent Babylon
+ray intersections, soft-surface depth/rims, and spawn switching. Install Chromium with `npx playwright install chromium`, or set
+`PLAYWRIGHT_CHANNEL=chrome` to use an installed Chrome browser.
+
+With the dev server running, `node scripts/benchmark.mjs report-name` records
+all seven destinations in `reports/report-name.json`. These are headless Chrome
+presentation timings at 1280 × 800, not GPU timestamps or a hardware-independent
+frame-rate guarantee. Before/after deformation captures are included in `reports/`.
+
+---
+
+The following documentation describes the original Snowflow demo.
+
 A real-time snow rendering tech demo. WebGPU, Babylon.js, hand-written WGSL.
 Everything you see is generated on the GPU at load time — there are no textures,
 no meshes, no HDRIs and no animation data in this repository.

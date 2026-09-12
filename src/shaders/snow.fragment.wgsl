@@ -27,6 +27,12 @@ varying vWorld: vec3f;
 varying vHeightUV: vec2f;
 varying vViewDist: f32;
 varying vSpacing: f32;
+#ifdef EXALTED_TERRAIN
+#include<surfaceTypes>
+uniform patchCenter: vec2f;
+varying vTerrainNormal: vec3f;
+varying vBiomeColor: vec3f;
+#endif
 
 // ------------------------------------------------------------------ textures
 var auxTex: texture_2d<f32>;
@@ -202,13 +208,24 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
     let footprintMin = max(min(length(ddxW.xz), length(ddyW.xz)), 1e-4);
 
     // ---------------------------------------------------------------- slopes
+#ifdef EXALTED_TERRAIN
+    // Snow is the near-white authored biome. Retain all other region colours.
+    let weights = surfaceWeights(input.vBiomeColor);
+    let snowCover = weights.x;
+    let sandCover = weights.y;
+    let importedNormal = normalize(input.vTerrainNormal);
+    let aux = vec4f(-importedNormal.xz / max(abs(importedNormal.y), 0.02), 0.0, 0.5);
+#else
+    let snowCover = 1.0;
+    let sandCover = 0.0;
     let aux = textureSampleLevel(auxTex, auxTexSampler, input.vHeightUV, 0.0);
+#endif
     var grad = aux.xy;
     let rockMask = aux.z;
     let exposure = aux.w;
 
     let fine = terrainFineFiltered(
-        world.xz, uniforms.windAngle, exposure, uniforms.sastrugiAmp, footprint
+        world.xz, uniforms.windAngle, exposure, uniforms.sastrugiAmp * (snowCover + sandCover * 0.18), footprint
     );
     grad += fine.yz;
 
@@ -221,7 +238,12 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
     var deformDepth = 0.0;
     var deformBerm = 0.0;
 
+#ifdef EXALTED_TERRAIN
+    let dWeight = deformFalloff(world.xz, uniforms.deformCenter, uniforms.deformSize)
+        * localFade(world.xz, uniforms.patchCenter) * (snowCover + sandCover);
+#else
     let dWeight = deformFalloff(world.xz, uniforms.deformCenter, uniforms.deformSize);
+#endif
     if (dWeight > 0.001) {
         let dUV = deformUV(world.xz, uniforms.deformSize);
         let c = textureSampleLevel(deformTex, deformTexSampler, dUV, 0.0);
@@ -267,6 +289,9 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
     }
 
     var N = normalFromGradient(grad);
+#ifdef EXALTED_TERRAIN
+    N = normalize(importedNormal - vec3f(grad.x - aux.x, 0.0, grad.y - aux.y));
+#endif
 
     // The surface the *depth pass* rendered: macro landform, the analytic fine
     // layer and carved snow, but nothing finer. The shading normal below picks up
@@ -275,7 +300,11 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
     // frequency than the one in the depth map — the offset would point off in a
     // different direction on every pixel and reintroduce the noise it exists to
     // remove.
+#ifdef EXALTED_TERRAIN
     let geoN = N;
+#else
+    let geoN = N;
+#endif
 
     // ---------------------------------------------------------- detail normals
     // Three tiling scales, each faded by footprint so the finest only exists
@@ -304,7 +333,7 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
         let up = select(vec3f(0.0, 1.0, 0.0), vec3f(1.0, 0.0, 0.0), abs(N.y) > 0.99);
         let T = normalize(cross(up, N));
         let B = cross(N, T);
-        let s = uniforms.detailStrength * mix(1.0, 0.45, compression);
+        let s = uniforms.detailStrength * mix(1.0, 0.45, compression) * mix(1.0, 0.48, sandCover);
         N = normalize(N + (T * acc.x + B * acc.y) * s);
     }
 
@@ -321,9 +350,15 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
     var roughness = 0.62;
     var f0 = vec3f(0.028);
     var thickness = 1.0; // 1 = deep drift, 0 = thin crust
+#ifdef EXALTED_TERRAIN
+    albedo = mix(input.vBiomeColor, albedo, snowCover);
+    roughness = mix(0.88, roughness, snowCover);
+    thickness *= snowCover;
+#endif
 
     // Compressed snow: denser, darker, tighter specular, scatters less.
-    albedo = mix(albedo, vec3f(0.62, 0.665, 0.755), compression * 0.85);
+    let packedColor = mix(vec3f(0.62, 0.665, 0.755), albedo * 0.82, sandCover);
+    albedo = mix(albedo, packedColor, compression * 0.85);
     roughness = mix(roughness, 0.34, compression);
     thickness = mix(thickness, 0.35, compression);
 
@@ -335,6 +370,9 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
 
     // Exposed rock. Snow keeps its grip on the flatter faces, so the mask is
     // gated by slope rather than applied flat.
+#ifdef EXALTED_TERRAIN
+    let rockExposed = 1.0 - snowCover;
+#else
     let rockExposed = rockMask * smoothstep(0.32, 0.66, 1.0 - N.y);
     if (rockExposed > 0.001) {
         let rn = noise2(world.xz * 2.3) * 0.5 + 0.5;
@@ -343,6 +381,7 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
         roughness = mix(roughness, 0.85, rockExposed);
         thickness = mix(thickness, 0.0, rockExposed);
     }
+#endif
 
     // --- carved-snow surface state -----------------------------------------
     // Freshly displaced mass is the opposite of trodden snow: it has just been
@@ -368,7 +407,7 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
     //     sky out of it.
     if (deformBerm > 0.002) {
         let loose = clamp(deformBerm * 5.0, 0.0, 1.0);
-        albedo = mix(albedo, vec3f(0.895, 0.920, 0.965), loose * 0.55);
+        albedo = mix(albedo, mix(vec3f(0.895, 0.920, 0.965), albedo * 1.12, sandCover), loose * 0.55);
         roughness = mix(roughness, 0.78, loose * 0.7);
         thickness = mix(thickness, 1.0, loose * 0.6);
         // Broken snow has crystal faces pointing everywhere, which is where the

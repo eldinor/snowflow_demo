@@ -18,7 +18,7 @@ import { S, onChange } from "./core/settings.js";
 import {
     sample, checkSpike, stats, mark, installDrawCounter, endFrameDraws,
 } from "./core/perf.js";
-import { initInput, pollInput, endFrame, input } from "./core/input.js";
+import { initInput, pollInput, endFrame, input, resetInput } from "./core/input.js";
 import { CameraRig } from "./core/camera.js";
 import { CharacterController } from "./character/controller.js";
 import { Character } from "./character/character.js";
@@ -27,9 +27,11 @@ import { SprayField } from "./vfx/particles.js";
 import { SurfWake } from "./vfx/surfWake.js";
 import { SpellSystem } from "./spells/spellSystem.js";
 import { Overlay } from "./ui/overlay.js";
+import { SpawnBar } from "./ui/spawnBar.js";
 import { Sky } from "./render/sky.js";
 import { ShadowSystem } from "./render/shadows.js";
 import { Terrain } from "./terrain/terrain.js";
+import { EXALTED_SPAWN } from "./terrain/exaltedWorld.js";
 import { DepthPass } from "./render/depthPass.js";
 import { PostChain } from "./post/postChain.js";
 import { whenReady } from "./core/gpuUtil.js";
@@ -39,6 +41,11 @@ import * as loading from "./core/loading.js";
 const _vel = new Vector3();
 
 async function boot() {
+    const exalted = new URLSearchParams(location.search).get("terrain") !== "snowflow";
+    if (exalted) {
+        // Exalted's actual mountain silhouettes replace the invented sky range.
+        S.showMountains = false;
+    }
     const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById("view"));
 
     if (!navigator.gpu) {
@@ -137,18 +144,24 @@ async function boot() {
     const depthPass = new DepthPass(scene);
 
     // -------------------------------------------------------------- terrain
-    await loading.phase("baking heightfield", 0.34);
-    const terrain = new Terrain(scene, sky, shadows);
+    await loading.phase(exalted ? "loading Exalted terrain" : "baking heightfield", 0.34);
+    const terrain = new Terrain(scene, sky, shadows, { exalted });
     terrain.mesh.renderingGroupId = 1;
     await terrain.build();
     onChange("showTerrain", (v) => (terrain.mesh.isVisible = v));
-    depthPass.registerCaster(terrain.mesh, terrain.makePrepassMaterial());
+    terrain.registerPrepass(depthPass);
 
     await loading.phase("placing character", 0.62);
 
     const character = new CharacterController(terrain);
     character.position.set(0, 0, 0);
     character.position.y = terrain.heightAt(0, 0);
+    if (exalted) {
+        character.position.copyFromFloats(EXALTED_SPAWN.x, EXALTED_SPAWN.y, EXALTED_SPAWN.z);
+        character.position.y = terrain.heightAt(character.position.x, character.position.z);
+        character.facing = Math.PI;
+        rig.yaw = Math.PI;
+    }
 
     // The figure: skeleton, garment simulation, shell fur.
     const figure = new Character(scene, terrain, sky, shadows, character);
@@ -174,13 +187,15 @@ async function boot() {
     );
     // Every surface a spell can light.
     spells.addConsumers(
-        terrain.material, figure.bodyMat, figure.clothMat,
+        ...terrain.materials, figure.bodyMat, figure.clothMat,
         wake.material, spray.material
     );
     spells.registerPrepass(depthPass);
 
     // The rig needs ground heights to keep the spring arm above the snow.
     rig.groundAt = (x, z) => terrain.heightAt(x, z);
+    // Initialise the camera at spawn before fitting shadows or warming TAA.
+    rig.update(0, character.position, character.velocity, 0, 0);
 
     const post = new PostChain(scene, rig.camera, depthPass, sky);
 
@@ -233,6 +248,8 @@ async function boot() {
     // ------------------------------------------------------------- run loop
     let prev = performance.now();
     let time = 0;
+    let pendingSpawn = null;
+    const spawnBar = exalted ? new SpawnBar((point) => { pendingSpawn = point; }) : null;
 
     engine.runRenderLoop(() => {
         flushResize();
@@ -243,6 +260,22 @@ async function boot() {
         const dt = S.freezeTime ? 0 : dtMs / 1000;
         time += dt;
 
+        if (pendingSpawn) {
+            const point = pendingSpawn;
+            pendingSpawn = null;
+            resetInput();
+            spells.reset();
+            terrain.groundProbe?.reset();
+            character.teleport(-point.x, -point.y, point.yaw);
+            figure.resetPose();
+            contact.reset();
+            wake.reset();
+            spray.reset();
+            rig.teleport(character.position, point.yaw);
+            post.resetHistory();
+            spawnBar.select(point);
+        }
+
         pollInput();
 
         // Per-system CPU timing. Babylon's WebGPU timestamp queries are
@@ -251,7 +284,6 @@ async function boot() {
         const tFrame = performance.now();
 
         character.update(dt, rig);
-        terrain.heightfield.clampToPlayArea(character.position);
         // Pose and simulate before the contact pass: the footprints are stamped
         // at the boot's actual planted position, which only exists once the
         // figure has been solved.
@@ -288,6 +320,7 @@ async function boot() {
 
         scene.render();
         post.endFrame();
+        terrain.groundProbe?.afterFrame();
         const tRender = performance.now();
 
         mark("cpu character", tChar - tFrame);
@@ -303,6 +336,7 @@ async function boot() {
         endFrameDraws();
         stats.triangles =
             (terrain.mesh.metadata ? terrain.mesh.metadata.triangles : 0) +
+            (terrain.local?.mesh.metadata.triangles || 0) +
             (S.showCharacter ? figure.triangles : 0) +
             (wake.mesh.isVisible ? wake.mesh.metadata.triangles : 0) +
             spells.triangles +
@@ -316,11 +350,12 @@ async function boot() {
     });
 
     await loading.done();
+    spawnBar?.show();
     setTimeout(() => overlay.resetSpikes(), 800);
 
     globalThis.SNOWFLOW = {
         engine, scene, rig, character, figure, contact, spray, wake, spells,
-        overlay, terrain, sky, shadows, post, depthPass,
+        overlay, terrain, sky, shadows, post, depthPass, spawnBar,
         S, input, perfStats: stats,
     };
 }
