@@ -35,6 +35,7 @@ import { Constants } from "@babylonjs/core/Engines/constants";
 import { Vector3, Vector4 } from "@babylonjs/core/Maths/math";
 
 import { S } from "../core/settings.js";
+import { bindDesertAppearance, DESERT_EFFECT_UNIFORMS } from '../terrain/desertAppearance.js';
 import { whenReady, bindMatrixArray } from "../core/gpuUtil.js";
 import { CASCADE_COUNT } from "../render/shadows.js";
 import { SPELL_LIGHT_UNIFORMS } from "../spells/spellLights.js";
@@ -153,7 +154,7 @@ export class SurfWake {
 
         /**
          * Per-term diagnostic, settable from the console as
-         * `SNOWFLOW.wake.debug = n`. See the switch at the bottom of
+         * `EXALTED.wake.debug = n`. See the switch at the bottom of
          * `wake.fragment.wgsl` for the modes.
          */
         this.debug = 0;
@@ -172,16 +173,18 @@ export class SurfWake {
                     "shadowTexel", "shadowSoftness", "shadowBias",
                     "fogDensity", "fogHeightFalloff", "fogStart", "aerialStrength",
                     "ambientIntensity", "sssStrength",
+                    ...DESERT_EFFECT_UNIFORMS,
                     "glintIntensity", "glintGrazing", "wakeTime", "wakeDebug",
                     ...SPELL_LIGHT_UNIFORMS,
                 ],
-                samplers: ["wakeTex", "skyLUT", "cascade0", "cascade1", "cascade2", "surfaceMap"],
+                samplers: ["wakeTex", "skyLUT", "cascade0", "cascade1", "cascade2", "surfaceMap", 'desertBaseTex'],
                 shaderLanguage: ShaderLanguage.WGSL,
             }
         );
         // An open curled sheet: both faces are seen, often in the same frame
         // through the holes torn in the lip.
         mat.backFaceCulling = false;
+        bindDesertAppearance(mat,this.terrain);
         mat.setTexture("wakeTex", this.dataTex);
         const world = this.terrain.heightfield;
         mat.setTexture('surfaceMap', world.surfaceMap || this.sky.lut);
@@ -279,6 +282,7 @@ export class SurfWake {
      * @param {Vector3} cameraPos
      */
     update(dt, cameraPos) {
+        this.material.setFloat('useDesertTextures',this.terrain.exalted && this.terrain.useDesertTextures ? 1 : 0);
         this._camPos.copyFrom(cameraPos);
         this._clock += dt;
 

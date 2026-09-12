@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>SNOWFLOW</title>
+<title>EXALTED</title>
 <link rel="icon" href="data:," />
 <style>
     :root {
@@ -176,17 +176,22 @@
 <body>
     <canvas id="view" tabindex="0"></canvas>
     <header id="spawn-bar" hidden>
-        <div class="spawn-brand"><strong>EXALTED</strong><small>Esc to choose a place</small></div>
+        <div class="spawn-brand"><strong>EXALTED</strong><small>Press Esc and click on<br>a world location</small></div>
         <nav aria-label="Spawn locations"></nav>
         <span class="spawn-status" role="status" aria-live="polite"></span>
     </header>
+    <aside id="terrain-panel" aria-label="Terrain appearance" hidden>
+        <h2>Textures</h2>
+        <label><input id="use-desert-textures" type="checkbox" checked> Use desert textures</label>
+        <label><input id="use-procedural-textures" type="checkbox"> Use procedural textures</label>
+    </aside>
 
     <div id="hint">click to look &nbsp;·&nbsp; wasd to move &nbsp;·&nbsp; f1 for settings</div>
 
     <div id="boot">
         <div class="boot-inner">
-            <div class="wordmark">SNOWFLOW</div>
-            <div class="tagline">a study in snow</div>
+            <div class="wordmark">EXALTED</div>
+            <div class="tagline">Interactive 3D magazine</div>
             <div class="bar"><div class="bar-fill" id="boot-bar"></div></div>
             <div class="phase" id="boot-phase">initialising</div>
         </div>
@@ -195,7 +200,7 @@
     <div id="nogpu">
         <div>
             <b>WebGPU is not available in this browser.</b><br />
-            SNOWFLOW requires a WebGPU-capable browser. Try Chrome 113+ on a desktop GPU.
+            EXALTED requires a WebGPU-capable browser. Try Chrome 113+ on a desktop GPU.
         </div>
     </div>
 

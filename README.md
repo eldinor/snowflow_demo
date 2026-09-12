@@ -1,10 +1,12 @@
-# SNOWFLOW
+# EXALTED
+
+World website: [exaltedgaming.gg](https://exaltedgaming.gg/).
 
 The default scene now uses Exalted's **`alpha-map.glb`** from the
 9 September 2026 world handoff, bundled at `public/assets/exalted/alpha-map.glb`.
-Its imported geometry and biome vertex colours define the world; Snowflow's
+Its imported geometry and biome vertex colours define the world; Exalted's
 procedural avatar, lighting and snow material remain the visual reference.
-Open `/?terrain=snowflow` to compare against the original procedural demo
+Open `/?terrain=procedural` to compare against the original procedural demo
 described below.
 
 Use the top bar to switch between **Desert Start** (the default), **The Palecrown**
@@ -13,6 +15,9 @@ Use the top bar to switch between **Desert Start** (the default), **The Palecrow
 Press **Esc** to release the mouse and choose a place; click the scene to resume
 looking and moving. Destinations use the Rev B register coordinates with elevation
 sampled from the terrain. Switching resets movement, cloth, effects and the camera.
+The compact top bar is flush with the top edge. Its left sidebar switches between
+**Use desert textures** and **Use procedural textures**; one checkbox is selected
+at a time. This changes appearance while retaining terrain deformation.
 
 The Exalted map stays at scale 1 (one unit per metre), with bounds
 1,872 × 1,404 m. Spawn is chart `(65, -616)`, or Babylon `(-65, height, 616)`,
@@ -41,6 +46,21 @@ Choose The Palecrown to compare snow tracks. Footsteps, sliding and deformation
 brushes from spells share this surface system; reflective spell ice still needs
 its Exalted reflection-mask integration.
 
+Desert sand now uses the embedded `DesertGround` material from
+`exalted_desert.glb`: the 2K red laterite soil/stones colour and normal textures,
+authored normal strength and roughness 0.95. Its planar UV projection is fitted
+and checked against all regional ground vertices, then reused in world space
+with the GLB texture transforms on both terrain detail levels. Texture sampling
+uses mip gradients, and compression/rims still modify the textured surface.
+This changes the sand to the supplied reddish soil appearance. The regional
+ground mesh remains excluded; snow and firm road materials are unchanged.
+Deformation shading follows the selected material: textured soil retains its
+colour and stones in impressions, uses modest relative darkening/brightening,
+and stays rough when compressed. Procedural sand has a separate pale-sand
+response. Snow's blue trench tint is restricted to snow. Dust and sliding wakes
+sample the desert ground texture in textured mode and use warm sand colours in
+procedural mode. Switching modes preserves impression depths and displaced mass.
+
 Feet and camera add a small GPU displacement readback to the original triangle
 height. A 128-square probe covers 16 m and updates at most ten times per second;
 grounding therefore follows recent deformation with asynchronous latency.
@@ -52,10 +72,17 @@ distant geometry. Small stones fade at 28–35 m, shrubs at 48–60 m, and large
 props at longer size-based ranges up to 180 m. Instance selections update after
 3 m of movement; original detail is retained within 16 m (30 m for larger props).
 The materials use authored base-colour, normal and roughness textures with
-Snowflow lighting, spell lights and aerial perspective. Vegetation uses alpha
+Exalted lighting, spell lights and aerial perspective. Vegetation uses alpha
 cutouts consistently in beauty, shadows and depth, including source materials
-exported as alpha blending. Props are visual dressing; obstacle collisions are
-not implemented.
+exported as alpha blending. Boulders, larger rocks, tree trunks and large cacti
+now block the avatar and camera. Bushes, leaves and small stones remain passable.
+The grounded avatar sweeps a 32 cm body radius with a 1.8 m vertical overlap span
+against simple static cylinders, sliding along their sides. Trunk widths come
+from lower mesh vertices rather than the canopy. A 16 m spatial grid queries the
+whole movement path, including fast sliding; collision is independent of render
+distance and LOD. The camera retracts immediately with 25 cm clearance and eases
+back out. These are approximate obstacles, not mesh-exact physics: climbing onto
+rocks, step-up, movable props and branch-level collision are not implemented.
 
 At Desert Start, the final selection contains 365 primitive instances and
 365,594 prop triangles. See `reports/desert-placement.json` for placement checks
@@ -76,13 +103,13 @@ frame-rate guarantee. Before/after deformation captures are included in `reports
 
 ---
 
-The following documentation describes the original Snowflow demo.
+The following documentation describes the original procedural demo.
 
 A real-time snow rendering tech demo. WebGPU, Babylon.js, hand-written WGSL.
 Everything you see is generated on the GPU at load time — there are no textures,
 no meshes, no HDRIs and no animation data in this repository.
 
-**▶ [snowflow-lilac.vercel.app](https://snowflow-lilac.vercel.app/)**
+**▶ [exaltedgaming.gg](https://exaltedgaming.gg/)**
 
 > Requires a WebGPU-capable desktop browser (Chrome/Edge 113+, Firefox 141+,
 > Safari 26+) and a discrete or recent integrated GPU. There is no WebGL
@@ -95,6 +122,7 @@ no meshes, no HDRIs and no animation data in this repository.
 | | |
 |---|---|
 | Click | capture the pointer |
+| `Ctrl+I` | toggle Babylon Inspector on the right (loaded on first use; version 9.18.0, matching Babylon) |
 | `W` `A` `S` `D` | move, relative to the camera |
 | Mouse | look · **Wheel** zoom |
 | `Shift` | sprint |

@@ -36,6 +36,8 @@ export const S = {
     // and the fine structure reads as flat ground.
     windDirection: 42,
     windStrength: 1.0,
+    bushWindStrength: 1.0,
+    bushWindSpeed: 1.0,
     /** Far-field mountain range on the skybox. */
     showMountains: true,
     /** Peak height of that range, metres. */
@@ -135,6 +137,8 @@ export const SCHEMA = [
             { k: "aerialStrength", l: "Aerial persp.", t: "f", min: 0, max: 2, step: 0.01 },
             { k: "windDirection", l: "Wind dir", t: "f", min: 0, max: 360, step: 1 },
             { k: "windStrength", l: "Wind strength", t: "f", min: 0, max: 2, step: 0.01 },
+            { k: "bushWindStrength", l: "Bush sway", t: "f", min: 0, max: 2, step: 0.01 },
+            { k: "bushWindSpeed", l: "Bush wind speed", t: "f", min: 0, max: 3, step: 0.01 },
             { k: "showMountains", l: "Far range", t: "b" },
             { k: "mountainHeight", l: "Range height", t: "f", min: 0, max: 2500, step: 10 },
             { k: "showLightShafts", l: "Light shafts", t: "b" },

@@ -39,6 +39,7 @@ var cascade2: texture_2d<f32>;
 var cascade2Sampler: sampler;
 
 uniform cameraPos: vec3f;
+#include<desertAppearance>
 uniform camRight: vec3f;
 uniform camUp: vec3f;
 uniform sunDir: vec3f;
@@ -109,7 +110,12 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
 
     // Snow crystals in air scatter almost isotropically at the surface and very
     // strongly forward through the volume, so both terms are needed.
-    let albedo = mix(vec3f(0.92, 0.94, 0.98), vec3f(0.74, 0.54, 0.29), sand);
+    var soil = vec3f(0.74, 0.54, 0.29);
+    if (sand > 0.5 && uniforms.useDesertTextures > 0.5) {
+        // Coarse mip averages stones and soil into fine airborne dust.
+        soil = desertSoilColor(world.xz,6.0)*1.15;
+    }
+    let albedo = mix(vec3f(0.92, 0.94, 0.98), soil, sand);
     let diff = wrapDiffuse(dot(N, L), 0.75);
     var color = albedo * INV_PI * sun * diff * shadow;
 

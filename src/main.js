@@ -1,5 +1,5 @@
 /**
- * SNOWFLOW — entry point and frame orchestration.
+ * EXALTED — entry point and frame orchestration.
  *
  * WebGPU only, by design. No WebGL path, no feature-detect branches: if the
  * adapter isn't there we say so once and stop.
@@ -28,6 +28,7 @@ import { SurfWake } from "./vfx/surfWake.js";
 import { SpellSystem } from "./spells/spellSystem.js";
 import { Overlay } from "./ui/overlay.js";
 import { SpawnBar } from "./ui/spawnBar.js";
+import { installInspectorShortcut } from './ui/inspector.js';
 import { Sky } from "./render/sky.js";
 import { ShadowSystem } from "./render/shadows.js";
 import { Terrain } from "./terrain/terrain.js";
@@ -42,7 +43,7 @@ import * as loading from "./core/loading.js";
 const _vel = new Vector3();
 
 async function boot() {
-    const exalted = new URLSearchParams(location.search).get("terrain") !== "snowflow";
+    const exalted = new URLSearchParams(location.search).get("terrain") !== "procedural";
     if (exalted) {
         // Exalted's actual mountain silhouettes replace the invented sky range.
         S.showMountains = false;
@@ -74,7 +75,7 @@ async function boot() {
     // this feature. Every desktop GPU that can run this demo has it.
     const filterable = engine.getCaps().textureFloatLinearFiltering;
     if (!filterable) {
-        console.warn("[snowflow] float32-filterable unavailable; height will step");
+        console.warn("[exalted] float32-filterable unavailable; height will step");
     }
 
     // Reconfiguring a WebGPU canvas destroys its current swap texture. Never do
@@ -202,6 +203,7 @@ async function boot() {
 
     // The rig needs ground heights to keep the spring arm above the snow.
     rig.groundAt = (x, z) => terrain.heightAt(x, z);
+    rig.obstacles = terrain.obstacles;
     // Initialise the camera at spawn before fitting shadows or warming TAA.
     rig.update(0, character.position, character.velocity, 0, 0);
 
@@ -209,6 +211,7 @@ async function boot() {
 
     const overlay = new Overlay({ rig, character });
     initInput(canvas, { onToggleOverlay: () => overlay.toggle() });
+    installInspectorShortcut(scene);
 
     // ------------------------------------------------------------- warm-up
     // Everything that can compile, compiles here — behind the loading screen.
@@ -259,7 +262,10 @@ async function boot() {
     let prev = performance.now();
     let time = 0;
     let pendingSpawn = null;
-    const spawnBar = exalted ? new SpawnBar((point) => { pendingSpawn = point; }) : null;
+    const spawnBar = exalted ? new SpawnBar((point) => { pendingSpawn = point; }, (useDesert) => {
+        terrain.useDesertTextures = useDesert;
+        post.resetHistory();
+    }) : null;
 
     engine.runRenderLoop(() => {
         flushResize();
@@ -318,7 +324,7 @@ async function boot() {
         spells.update(dt, rig.camera.position);
         const tSpells = performance.now();
         terrain.update(rig.camera.position, character.position, dt);
-        desertProps?.update(rig.camera.position, character.position);
+        desertProps?.update(rig.camera.position, character.position, false, dt);
         const tTerrain = performance.now();
         // After the shadow refit, so the figure's uniforms carry this frame's
         // cascade matrices rather than last frame's.
@@ -365,7 +371,7 @@ async function boot() {
     spawnBar?.show();
     setTimeout(() => overlay.resetSpikes(), 800);
 
-    globalThis.SNOWFLOW = {
+    globalThis.EXALTED = {
         engine, scene, rig, character, figure, contact, spray, wake, spells,
         overlay, terrain, sky, shadows, post, depthPass, spawnBar,
         S, input, perfStats: stats,

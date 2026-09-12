@@ -5,14 +5,14 @@ test("Exalted GLB renders, grounds the avatar, and preserves the snow reference"
     page.on("pageerror", (error) => errors.push(error.message));
     page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });
     await page.goto("/");
-    await page.waitForFunction(() => globalThis.SNOWFLOW || document.querySelector("#nogpu.show"), null, { timeout: 120_000 });
+    await page.waitForFunction(() => globalThis.EXALTED || document.querySelector("#nogpu.show"), null, { timeout: 120_000 });
     expect(await page.locator("#nogpu").isVisible()).toBe(false);
     const state = await page.evaluate(async () => {
-        const { terrain, character, rig, S } = SNOWFLOW;
+        const { terrain, character, rig, S } = EXALTED;
         const { Ray } = await import("/node_modules/@babylonjs/core/Culling/ray.js");
         const { Vector3 } = await import("/node_modules/@babylonjs/core/Maths/math.vector.js");
         const { Mesh } = await import('/node_modules/@babylonjs/core/Meshes/mesh.js');
-        const reference = new Mesh('groundingReference', SNOWFLOW.scene);
+        const reference = new Mesh('groundingReference', EXALTED.scene);
         terrain.heightfield.data.applyToMesh(reference);
         reference.isVisible = false;
         reference.computeWorldMatrix(true);
@@ -37,6 +37,10 @@ test("Exalted GLB renders, grounds the avatar, and preserves the snow reference"
             yaw: rig.yaw, mountains: S.showMountains, maxError,
             sideOrientation: terrain.mesh.sideOrientation,
             sand: terrain.heightfield.weightsAt(character.position.x, character.position.z)[1],
+            desertGround: {name:terrain.desertGround.material,uvError:terrain.desertGround.uv.maxError,
+                base:terrain.desertGround.base.name,normal:terrain.desertGround.normal.name,
+                roughness:terrain.desertGround.roughness,
+                shared:terrain.materials.every(m=>m._textures.desertBaseTex===terrain.desertGround.base && m._textures.desertNormalTex===terrain.desertGround.normal)},
         };
     });
     expect(state.source).toContain("alpha-map.glb");
@@ -53,22 +57,26 @@ test("Exalted GLB renders, grounds the avatar, and preserves the snow reference"
     expect(state.mountains).toBe(false);
     expect(state.sideOrientation).toBe(0);
     expect(state.sand).toBe(1);
+    expect(state.desertGround.name).toBe('DesertGround');
+    expect(state.desertGround.uvError).toBeLessThan(.0001);
+    expect(state.desertGround.roughness).toBeCloseTo(.95);
+    expect(state.desertGround.shared).toBe(true);
     expect(state.maxError).toBeLessThan(0.001);
     await page.screenshot({ path: testInfo.outputPath("exalted-spawn.png") });
     await page.keyboard.down("KeyW");
-    await page.waitForFunction(() => SNOWFLOW.character.position.z < 615);
+    await page.waitForFunction(() => EXALTED.character.position.z < 615);
     await page.keyboard.up("KeyW");
     await page.getByRole("button", { name: "The Palecrown, Snow", exact: true }).click();
-    await expect.poll(() => page.evaluate(() => Math.abs(SNOWFLOW.rig.pivot.z + 251))).toBeLessThan(1);
+    await expect.poll(() => page.evaluate(() => Math.abs(EXALTED.rig.pivot.z + 251))).toBeLessThan(1);
     await page.screenshot({ path: testInfo.outputPath("exalted-snow.png") });
     expect(errors).toEqual([]);
 });
 
-test("original Snowflow remains available as a visual reference", async ({ page }) => {
-    await page.goto("/?terrain=snowflow");
-    await page.waitForFunction(() => globalThis.SNOWFLOW || document.querySelector("#nogpu.show"), null, { timeout: 120_000 });
+test("original procedural remains available as a visual reference", async ({ page }) => {
+    await page.goto("/?terrain=procedural");
+    await page.waitForFunction(() => globalThis.EXALTED || document.querySelector("#nogpu.show"), null, { timeout: 120_000 });
     expect(await page.locator("#nogpu").isVisible()).toBe(false);
-    expect(await page.evaluate(() => SNOWFLOW.terrain.exalted)).toBe(false);
+    expect(await page.evaluate(() => EXALTED.terrain.exalted)).toBe(false);
     await expect(page.getByRole("navigation", { name: "Spawn locations" })).toBeHidden();
 });
 
@@ -77,7 +85,7 @@ test("spawn bar switches named biomes, resets motion and supports keyboard and s
     page.on("pageerror", (error) => errors.push(error.message));
     page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });
     await page.goto("/");
-    await page.waitForFunction(() => globalThis.SNOWFLOW, null, { timeout: 120_000 });
+    await page.waitForFunction(() => globalThis.EXALTED, null, { timeout: 120_000 });
     const points = [
         ["Desert Start, Desert", -65, 616],
         ["The Palecrown, Snow", 218, -251],
@@ -91,17 +99,17 @@ test("spawn bar switches named biomes, resets motion and supports keyboard and s
     for (const [name, x, z] of points) {
         // Teleports must work while effects/momentum are live and time is paused.
         await page.evaluate(() => {
-            SNOWFLOW.S.freezeTime = true;
-            SNOWFLOW.character.velocity.set(10, 0, 12);
-            SNOWFLOW.character.surf = 1;
-            SNOWFLOW.wake._count = 10;
+            EXALTED.S.freezeTime = true;
+            EXALTED.character.velocity.set(10, 0, 12);
+            EXALTED.character.surf = 1;
+            EXALTED.wake._count = 10;
         });
         const button = page.getByRole("button", { name, exact: true });
         await button.click();
         await expect(button).toHaveAttribute("aria-pressed", "true");
-        await expect.poll(() => page.evaluate(([x, z]) => Math.hypot(SNOWFLOW.character.position.x - x, SNOWFLOW.character.position.z - z), [x, z])).toBeLessThan(0.01);
+        await expect.poll(() => page.evaluate(([x, z]) => Math.hypot(EXALTED.character.position.x - x, EXALTED.character.position.z - z), [x, z])).toBeLessThan(0.01);
         const state = await page.evaluate(() => {
-            const { character: ch, figure, terrain, rig, wake, spray } = SNOWFLOW;
+            const { character: ch, figure, terrain, rig, wake, spray } = EXALTED;
             let clothDistance = 0;
             for (const panel of figure.panels) for (let i = 0; i < panel.pos.length; i += 3) {
                 clothDistance = Math.max(clothDistance, Math.hypot(panel.pos[i] - ch.position.x, panel.pos[i + 1] - ch.position.y, panel.pos[i + 2] - ch.position.z));
@@ -130,8 +138,8 @@ test("spawn bar switches named biomes, resets motion and supports keyboard and s
     await page.keyboard.press("Enter");
     await expect(desert).toHaveAttribute("aria-pressed", "true");
     await page.keyboard.press("Digit3");
-    expect(await page.evaluate(() => SNOWFLOW.spells.activeCount)).toBe(0);
-    await page.evaluate(() => { SNOWFLOW.S.freezeTime = false; });
+    expect(await page.evaluate(() => EXALTED.spells.activeCount)).toBe(0);
+    await page.evaluate(() => { EXALTED.S.freezeTime = false; });
     await page.screenshot({ path: testInfo.outputPath("spawn-bar-desktop.png") });
     await page.setViewportSize({ width: 600, height: 800 });
     const gate = page.getByRole("button", { name: "Stone Gate, Pass", exact: true });

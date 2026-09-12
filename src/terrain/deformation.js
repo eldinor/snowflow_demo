@@ -275,7 +275,7 @@ export class DeformationField {
      */
     async warmUp() {
         if (!this.surfaceMap) {
-            // Unused in Snowflow mode, but WebGPU still requires a valid binding.
+            // Unused in procedural mode, but WebGPU still requires a valid binding.
             for (const target of this._targets) {
                 target.setTexture('surfaceMap', this.brushTex);
                 target.setVector2('surfaceOrigin', this.center);

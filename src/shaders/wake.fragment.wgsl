@@ -45,6 +45,7 @@ var cascade2: texture_2d<f32>;
 var cascade2Sampler: sampler;
 
 uniform cameraPos: vec3f;
+#include<desertAppearance>
 uniform sunDir: vec3f;
 uniform sunRadiance: vec3f;
 uniform shR: array<vec4f, 9>;
@@ -65,7 +66,7 @@ uniform sssStrength: f32;
 uniform glintIntensity: f32;
 uniform glintGrazing: f32;
 uniform wakeTime: f32;
-/// Per-term diagnostic. See the switch at the bottom; `SNOWFLOW.wake.debug`.
+/// Per-term diagnostic. See the switch at the bottom; `EXALTED.wake.debug`.
 uniform wakeDebug: f32;
 
 uniform spellLightPos: array<vec4f, 4>;
@@ -140,8 +141,10 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
     // Freshly displaced snow: brighter and rougher than the pack it came out of.
     var sand = 0.0;
     if (uniforms.useSurfaceMap > 0.5) { sand = mappedSurface(world.xz).y; }
-    let albedo = mix(vec3f(0.895, 0.920, 0.965), vec3f(0.83, 0.66, 0.39), sand);
-    let roughness = 0.80;
+    var soil = vec3f(0.83, 0.66, 0.39);
+    if (sand > 0.001 && uniforms.useDesertTextures > 0.5) { soil = desertSoilColor(world.xz,3.0)*1.10; }
+    let albedo = mix(vec3f(0.895, 0.920, 0.965), soil, sand);
+    let roughness = mix(0.80,0.95,sand);
     let f0 = vec3f(0.026);
 
     // Thin at the lip, deep at the base. This is the gradient the whole read
@@ -153,7 +156,7 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
     // a 13-degree sun whose beam is roughly 17:13:6, the result was several times
     // brighter than the direct diffuse and unmistakably *warm*. On white snow
     // that reads as dirt — the outer face of the wall came out brown.
-    let thickness = mix(0.92, 0.32, smoothstep(0.15, 0.95, q));
+    let thickness = mix(0.92, 0.32, smoothstep(0.15, 0.95, q)) * (1.0-sand);
 
     // ------------------------------------------------------------- lighting
     let NdotL = dot(N, L);
@@ -263,13 +266,13 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
     //     which is why a real snow cave is blue and not grey. Tying the tint to
     //     the darkening rather than to `barrel` directly means the two can never
     //     drift apart.
-    let caveTint = mix(vec3f(1.0), vec3f(0.55, 0.72, 1.0), (1.0 - occ) * 0.95);
+    let caveTint = mix(vec3f(1.0), vec3f(0.55, 0.72, 1.0), (1.0 - occ) * 0.95 * (1.0-sand));
     color *= occ * caveTint;
 
     if (uniforms.glintIntensity > 0.001) {
         let g = snowGlints(
             world.xz, N, V, L, footprint,
-            uniforms.glintIntensity, uniforms.glintGrazing
+            uniforms.glintIntensity * (1.0-sand), uniforms.glintGrazing
         );
         color += sun * g * shadow * 0.5;
     }

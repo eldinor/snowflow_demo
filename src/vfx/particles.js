@@ -28,6 +28,7 @@ import { Constants } from "@babylonjs/core/Engines/constants";
 import { Vector3, Vector4 } from "@babylonjs/core/Maths/math";
 
 import { S } from "../core/settings.js";
+import { bindDesertAppearance, DESERT_EFFECT_UNIFORMS } from '../terrain/desertAppearance.js';
 import { whenReady, bindMatrixArray } from "../core/gpuUtil.js";
 import { CASCADE_COUNT } from "../render/shadows.js";
 import { SPELL_LIGHT_UNIFORMS } from "../spells/spellLights.js";
@@ -132,14 +133,16 @@ export class SprayField {
                     "shadowTexel", "shadowSoftness", "shadowBias",
                     "fogDensity", "fogHeightFalloff", "fogStart", "aerialStrength",
                     "ambientIntensity",
+                    ...DESERT_EFFECT_UNIFORMS,
                     ...SPELL_LIGHT_UNIFORMS,
                 ],
-                samplers: ["sprayTex", "skyLUT", "cascade0", "cascade1", "cascade2"],
+                samplers: ["sprayTex", "skyLUT", "cascade0", "cascade1", "cascade2", 'desertBaseTex'],
                 shaderLanguage: ShaderLanguage.WGSL,
                 needAlphaBlending: true,
             }
         );
         mat.backFaceCulling = false;
+        bindDesertAppearance(mat,this.terrain);
         mat.disableDepthWrite = true;
         mat.alphaMode = Constants.ALPHA_COMBINE;
         // ShaderMaterial decides blending from `alpha` and its option flag; this
@@ -270,6 +273,7 @@ export class SprayField {
 
     _pushUniforms() {
         const m = this.material;
+        m.setFloat('useDesertTextures',this.terrain.exalted && this.terrain.useDesertTextures ? 1 : 0);
         const sky = this.sky;
         const sh = this.shadows;
         const cam = this.scene.activeCamera;

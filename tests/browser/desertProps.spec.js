@@ -5,10 +5,10 @@ test('desert props preserve placement, use bounded instance LODs, and disappear 
     page.on('pageerror', e => errors.push(e.message));
     page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
     await page.goto('/');
-    await page.waitForFunction(() => globalThis.SNOWFLOW, null, { timeout: 120000 });
+    await page.waitForFunction(() => globalThis.EXALTED, null, { timeout: 120000 });
     await page.waitForTimeout(1100);
     const state = await page.evaluate(() => {
-        const { desertProps: p, scene } = SNOWFLOW;
+        const { desertProps: p, scene } = EXALTED;
         return {
             batches: p.batches.length, total: p.audit.primitiveInstances,
             error: p.audit.transformError, floating: p.audit.floatingOver20cm,
@@ -41,17 +41,17 @@ test('desert props preserve placement, use bounded instance LODs, and disappear 
     await page.keyboard.up('KeyS');
     await page.waitForTimeout(300);
     const moved = await page.evaluate(() => ({
-        z: SNOWFLOW.character.position.z,
-        groundError: Math.abs(SNOWFLOW.character.position.y - SNOWFLOW.terrain.heightAt(SNOWFLOW.character.position.x,SNOWFLOW.character.position.z)),
-        finite: SNOWFLOW.desertProps.batches.every(b => b.visible.every(Number.isFinite) && b.farVisible.every(Number.isFinite)),
+        z: EXALTED.character.position.z,
+        groundError: Math.abs(EXALTED.character.position.y - EXALTED.terrain.heightAt(EXALTED.character.position.x,EXALTED.character.position.z)),
+        finite: EXALTED.desertProps.batches.every(b => b.visible.every(Number.isFinite) && b.farVisible.every(Number.isFinite)),
     }));
     expect(moved.z).toBeGreaterThan(610);
     expect(moved.groundError).toBeLessThan(.15);
     expect(moved.finite).toBe(true);
     await page.screenshot({path:info.outputPath('desert-plants-close.png')});
     await page.locator('[data-spawn="C5"]').click();
-    await expect.poll(() => page.evaluate(() => SNOWFLOW.desertProps.visibleInstances)).toBe(0);
+    await expect.poll(() => page.evaluate(() => EXALTED.desertProps.visibleInstances)).toBe(0);
     await page.locator('[data-spawn="desert-start"]').click();
-    await expect.poll(() => page.evaluate(() => SNOWFLOW.desertProps.visibleInstances)).toBe(state.visible);
+    await expect.poll(() => page.evaluate(() => EXALTED.desertProps.visibleInstances)).toBe(state.visible);
     expect(errors).toEqual([]);
 });

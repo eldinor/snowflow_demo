@@ -116,7 +116,7 @@ export class Overlay {
         // --------------------------------------------------------- header
         const hdr = document.createElement("div");
         hdr.className = "hdr";
-        hdr.innerHTML = "<b>SNOWFLOW</b><i>F1 to close</i>";
+        hdr.innerHTML = "<b>EXALTED</b><i>F1 to close</i>";
         el.appendChild(hdr);
 
         // ----------------------------------------------------- frame graph
@@ -429,7 +429,7 @@ export class Overlay {
         const rig = this.rig;
         if (!rig) return "—";
         const c = this.character;
-        let s = "const s=SNOWFLOW;";
+        let s = "const s=EXALTED;";
         if (c) {
             s +=
                 "s.character.position.set(" +

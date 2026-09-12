@@ -10,6 +10,7 @@
  */
 
 import { ShaderStore } from "@babylonjs/core/Engines/shaderStore";
+import desertAppearance from './lib/desertAppearance.wgsl?raw';
 import desertPropVert from './desertProp.vertex.wgsl?raw';
 import desertPropFrag from './desertProp.fragment.wgsl?raw';
 
@@ -77,6 +78,7 @@ import crystalPrepassVert from "./crystalPrepass.vertex.wgsl?raw";
 
 
 const INCLUDES = {
+    desertAppearance,
     surfaceTypes: surfaceWGSL,
     exaltedSurface,
     surfaceMap,

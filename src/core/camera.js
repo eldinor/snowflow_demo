@@ -97,6 +97,7 @@ export class CameraRig {
 
     /** @param {number} amount 0..1 */
     teleport(target, yaw) {
+        this.obstacleFraction = 1;
         this._first = true;
         this.pivotVel.setAll(0);
         this.yaw = yaw;
@@ -222,6 +223,15 @@ export class CameraRig {
         }
 
         const cam = this.camera;
+        if (this.obstacles) {
+            // Anchor to the actual avatar, since the spring pivot may lag through a trunk.
+            _tmp.copyFrom(targetPos); _tmp.y += this.pivotHeight;
+            const allowed = this.obstacles.cameraFraction(_tmp,_desired,.25);
+            this.obstacleFraction = Math.min(allowed,expDamp(this.obstacleFraction ?? 1,allowed,6,dt));
+            _desired.x = _tmp.x+(_desired.x-_tmp.x)*this.obstacleFraction;
+            _desired.y = _tmp.y+(_desired.y-_tmp.y)*this.obstacleFraction;
+            _desired.z = _tmp.z+(_desired.z-_tmp.z)*this.obstacleFraction;
+        }
         cam.position.copyFrom(_desired);
         cam.fov = this.fov;
         cam.rotation.set(

@@ -30,6 +30,19 @@ varying vSpacing: f32;
 #ifdef EXALTED_TERRAIN
 #include<surfaceTypes>
 uniform patchCenter: vec2f;
+uniform desertU: vec3f;
+uniform desertV: vec3f;
+uniform desertBaseMatrix: mat4x4f;
+uniform desertNormalMatrix: mat4x4f;
+uniform desertColor: vec3f;
+uniform desertRoughness: f32;
+uniform desertNormalScale: vec2f;
+uniform desertGamma: f32;
+uniform useDesertTextures: f32;
+var desertBaseTex: texture_2d<f32>;
+var desertBaseTexSampler: sampler;
+var desertNormalTex: texture_2d<f32>;
+var desertNormalTexSampler: sampler;
 varying vTerrainNormal: vec3f;
 varying vBiomeColor: vec3f;
 #endif
@@ -213,11 +226,16 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
     let weights = surfaceWeights(input.vBiomeColor);
     let snowCover = weights.x;
     let sandCover = weights.y;
+    let desertTextureCover = sandCover * uniforms.useDesertTextures;
+    let groundUV = vec2f(dot(vec3f(world.xz,1.0),uniforms.desertU),dot(vec3f(world.xz,1.0),uniforms.desertV));
+    let groundDx = vec2f(dot(ddxW.xz,uniforms.desertU.xy),dot(ddxW.xz,uniforms.desertV.xy));
+    let groundDy = vec2f(dot(ddyW.xz,uniforms.desertU.xy),dot(ddyW.xz,uniforms.desertV.xy));
     let importedNormal = normalize(input.vTerrainNormal);
     let aux = vec4f(-importedNormal.xz / max(abs(importedNormal.y), 0.02), 0.0, 0.5);
 #else
     let snowCover = 1.0;
     let sandCover = 0.0;
+    let desertTextureCover = 0.0;
     let aux = textureSampleLevel(auxTex, auxTexSampler, input.vHeightUV, 0.0);
 #endif
     var grad = aux.xy;
@@ -310,7 +328,7 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
     // Three tiling scales, each faded by footprint so the finest only exists
     // when it is actually resolvable, and cross-faded so no scale ever pops in.
     let steep = smoothstep(0.55, 0.9, 1.0 - N.y);
-    if (uniforms.detailStrength > 0.001) {
+    if (uniforms.detailStrength > 0.001 && desertTextureCover < 0.999) {
         var acc = vec3f(0.0, 0.0, 1.0);
 
         let f0 = 1.0 - smoothstep(0.004, 0.02, footprint);
@@ -333,7 +351,7 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
         let up = select(vec3f(0.0, 1.0, 0.0), vec3f(1.0, 0.0, 0.0), abs(N.y) > 0.99);
         let T = normalize(cross(up, N));
         let B = cross(N, T);
-        let s = uniforms.detailStrength * mix(1.0, 0.45, compression) * mix(1.0, 0.48, sandCover);
+        let s = uniforms.detailStrength * mix(1.0, 0.45, compression) * mix(1.0,0.48,sandCover) * (1.0-desertTextureCover);
         N = normalize(N + (T * acc.x + B * acc.y) * s);
     }
 
@@ -354,12 +372,35 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
     albedo = mix(input.vBiomeColor, albedo, snowCover);
     roughness = mix(0.88, roughness, snowCover);
     thickness *= snowCover;
+    if (desertTextureCover > 0.001) {
+        // Reuse the source UV scale, offset and orientation in world space so
+        // the coarse mesh, moving detail patch and footprints never change tiling.
+        let uv=(uniforms.desertBaseMatrix*vec4f(groundUV,1.0,0.0)).xy;
+        let dx=(uniforms.desertBaseMatrix*vec4f(groundDx,0.0,0.0)).xy;
+        let dy=(uniforms.desertBaseMatrix*vec4f(groundDy,0.0,0.0)).xy;
+        let base=textureSampleGrad(desertBaseTex,desertBaseTexSampler,uv,dx,dy).rgb;
+        let decoded=select(base/12.92,pow((base+vec3f(0.055))/1.055,vec3f(2.4)),base>vec3f(0.04045));
+        albedo=mix(albedo,mix(base,decoded,uniforms.desertGamma)*uniforms.desertColor,sandCover);
+        roughness=mix(roughness,uniforms.desertRoughness,sandCover);
+        let nuv=(uniforms.desertNormalMatrix*vec4f(groundUV,1.0,0.0)).xy;
+        let ndx=(uniforms.desertNormalMatrix*vec4f(groundDx,0.0,0.0)).xy;
+        let ndy=(uniforms.desertNormalMatrix*vec4f(groundDy,0.0,0.0)).xy;
+        let bump=textureSampleGrad(desertNormalTex,desertNormalTexSampler,nuv,ndx,ndy).xyz*2.0-1.0;
+        let T=cross(ddyW,N)*ndx.x+cross(N,ddxW)*ndy.x;
+        let B=cross(ddyW,N)*ndx.y+cross(N,ddxW)*ndy.y;
+        let scale=inverseSqrt(max(max(dot(T,T),dot(B,B)),1e-12));
+        let mapped=normalize(N*max(bump.z,0.1)+(T*bump.x*uniforms.desertNormalScale.x+B*bump.y*uniforms.desertNormalScale.y)*scale);
+        N=normalize(mix(N,mapped,sandCover*mix(1.0,0.65,compression)));
+    }
 #endif
 
     // Compressed snow: denser, darker, tighter specular, scatters less.
-    let packedColor = mix(vec3f(0.62, 0.665, 0.755), albedo * 0.82, sandCover);
+    let soilBaseColor = albedo;
+    let packedColor = mix(vec3f(0.62, 0.665, 0.755), soilBaseColor * mix(0.82,0.92,desertTextureCover), sandCover);
     albedo = mix(albedo, packedColor, compression * 0.85);
-    roughness = mix(roughness, 0.34, compression);
+    // Soil compacts without becoming the smooth, reflective material used for snow.
+    let packedRoughness = mix(0.34,mix(0.76,0.84,desertTextureCover),sandCover);
+    roughness = mix(roughness, packedRoughness, compression);
     thickness = mix(thickness, 0.35, compression);
 
     // Refrozen ice: smooth and genuinely reflective.
@@ -407,8 +448,9 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
     //     sky out of it.
     if (deformBerm > 0.002) {
         let loose = clamp(deformBerm * 5.0, 0.0, 1.0);
-        albedo = mix(albedo, mix(vec3f(0.895, 0.920, 0.965), albedo * 1.12, sandCover), loose * 0.55);
-        roughness = mix(roughness, 0.78, loose * 0.7);
+        let soilRim = soilBaseColor * mix(1.12,1.10,desertTextureCover);
+        albedo = mix(albedo, mix(vec3f(0.895, 0.920, 0.965), soilRim, sandCover), loose * 0.55);
+        roughness = mix(roughness, mix(0.78,mix(0.92,0.98,desertTextureCover),sandCover), loose * 0.7);
         thickness = mix(thickness, 1.0, loose * 0.6);
         // Broken snow has crystal faces pointing everywhere, which is where the
         // chunky granular read at a trail edge actually comes from.
@@ -426,8 +468,9 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
     // find and what it returns is dominated by its own view-dependent bias — a
     // broad, soft darkening keyed to distance from the camera, which slides
     // across the ground when the camera moves and nothing else does.
-    var ao = mix(1.0, cavity, 0.35 * (1.0 - smoothstep(0.02, 0.25, footprint)))
-           * (1.0 - clamp(deformDepth * 1.9, 0.0, 1.0) * 0.38);
+    thickness *= snowCover;
+    var ao = mix(1.0, cavity, 0.35 * (1.0-desertTextureCover) * (1.0 - smoothstep(0.02, 0.25, footprint)))
+           * (1.0 - clamp(deformDepth * 1.9, 0.0, 1.0) * mix(0.38,mix(0.25,0.18,desertTextureCover),sandCover));
 
     // ------------------------------------------------------------- lighting
     let NdotL = dot(N, L);
@@ -547,7 +590,7 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
     //     is blue and not grey. The tint is the same `deepTint` the subsurface
     //     term uses, and tying it to the darkening rather than to `deformDepth`
     //     means the two can never drift apart.
-    let caveTint = mix(vec3f(1.0), vec3f(0.55, 0.72, 1.0), (1.0 - ao) * 0.95);
+    let caveTint = mix(vec3f(1.0), vec3f(0.55, 0.72, 1.0), (1.0 - ao) * 0.95 * snowCover);
     color *= ao * caveTint;
 
     // ------------------------------------------------------- aerial perspective

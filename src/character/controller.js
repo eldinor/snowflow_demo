@@ -136,8 +136,11 @@ export class CharacterController {
         else this._walkStep(h);
 
         // ---------------------------------------------------- integrate + snap
-        this.position.x += this.velocity.x * h;
-        this.position.z += this.velocity.z * h;
+        if (this.terrain.obstacles) this.terrain.obstacles.move(this.position,this.velocity,h);
+        else {
+            this.position.x += this.velocity.x * h;
+            this.position.z += this.velocity.z * h;
+        }
         // Clamp before grounding so border frames sample the final position.
         this.terrain.heightfield?.clampToPlayArea(this.position);
 

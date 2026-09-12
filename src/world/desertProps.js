@@ -10,15 +10,20 @@ import { RawTexture } from '@babylonjs/core/Materials/Textures/rawTexture';
 import { S } from '../core/settings.js';
 import { bindMatrixArray, whenReady } from '../core/gpuUtil.js';
 import { MeshoptSimplifier } from 'meshoptimizer/simplifier';
+import { PropCollisions, solidPropKind } from './propCollisions.js';
 
 /** Authored placements, compacted into shared geometry/material instance batches. */
 export class DesertProps {
     constructor(scene, terrain, sky, shadows, depthPass) {
         Object.assign(this, { scene, terrain, sky, shadows, depthPass });
         this.batches = []; this.materials = []; this.passes = [];
+        this.collisions = new PropCollisions();
+        terrain.obstacles = this.collisions;
         this.center = new Vector2(-65, 604);
         this.last = new Vector2(Infinity, Infinity);
         this.splits = new Vector4(); this.triangles = 0; this.visibleInstances = 0;
+        this.windTime = 0;
+        this.wind = new Vector4();
         this.white = RawTexture.CreateRGBATexture(new Uint8Array([255,255,255,255]),1,1,scene,false,false);
         this.flat = RawTexture.CreateRGBATexture(new Uint8Array([128,128,255,255]),1,1,scene,false,false);
     }
@@ -27,6 +32,9 @@ export class DesertProps {
         await MeshoptSimplifier.ready;
         const container = await LoadAssetContainerAsync(`${import.meta.env.BASE_URL}assets/exalted/exalted_desert.glb`, this.scene);
         this.container = container;
+        const ground=container.meshes.find(m=>m.name==='Ground');
+        if(!ground) throw new Error('Desert GLB ground material is missing');
+        this.terrain.setDesertGround(ground);
         const root = container.meshes.find(m => m.name === '__root__');
         if (!root) throw new Error('Desert GLB has no loader root');
         const rootMatrix = root.computeWorldMatrix(true).clone(), inverseRoot = Matrix.Invert(rootMatrix);
@@ -65,6 +73,33 @@ export class DesertProps {
             batch.distance = Math.max(batch.distance, Math.min(220, 35 + diameter * 24));
             // Check the actual transformed vertex chain, not just position metadata.
             const original = source.getVerticesData('position');
+            const kind = solidPropKind(source.material.name);
+            if (kind) {
+                const vertices = [];
+                let bottom=Infinity, top=-Infinity;
+                for (let v=0;v<original.length;v+=3) {
+                    Vector3.TransformCoordinatesFromFloatsToRef(original[v],original[v+1],original[v+2],authored,point);
+                    vertices.push(point.x,point.y,point.z);
+                    bottom=Math.min(bottom,point.y); top=Math.max(top,point.y);
+                }
+                let minX=Infinity,maxX=-Infinity,minZ=Infinity,maxZ=-Infinity;
+                // Only the lower trunk defines width; leaves and crowns stay passable.
+                const cutoff=kind==='trunk' ? bottom+Math.min(1.8,(top-bottom)*.2) : top;
+                for (let v=0;v<vertices.length;v+=3) {
+                    if (vertices[v+1]>cutoff) continue;
+                    minX=Math.min(minX,vertices[v]); maxX=Math.max(maxX,vertices[v]);
+                    minZ=Math.min(minZ,vertices[v+2]); maxZ=Math.max(maxZ,vertices[v+2]);
+                }
+                const x=(minX+maxX)/2,z=(minZ+maxZ)/2;
+                const radius=Math.max(maxX-minX,maxZ-minZ)*.5;
+                const ground=this.terrain.heightfield.heightAt(x,z);
+                if (kind==='trunk' || (radius>=.4 && top-ground>=.35)) {
+                    this.collisions.add({name:node.name,kind,x,z,radius:Math.max(.12,radius),minY:bottom,
+                        maxY:kind==='trunk' ? Math.min(top,Math.max(ground+2.2,bottom+(top-bottom)*.55)) : top});
+                }
+                // Restore the centre used by the existing placement audit.
+                Vector3.TransformCoordinatesToRef(bound.center,authored,point);
+            }
             const originalPoint = Vector3.TransformCoordinates(Vector3.FromArray(original), authored);
             const instancedPoint = Vector3.TransformCoordinates(Vector3.FromArray(batch.data.positions), instance);
             transformError = Math.max(transformError, Vector3.Distance(originalPoint, instancedPoint));
@@ -80,6 +115,9 @@ export class DesertProps {
         }
         for (const batch of groups.values()) {
             const name = batch.sourceMaterial.name;
+            batch.windEnabled = /didelta|leipoldtia|iceplant/.test(name);
+            const bounds = batch.mesh.getBoundingInfo().boundingBox;
+            batch.windBounds = new Vector2(bounds.minimum.y, Math.max(.01, bounds.maximum.y - bounds.minimum.y));
             if (/sand_rocks_small|namaqualand_stones/.test(name)) batch.distance = 35;
             else if (/didelta|leipoldtia|iceplant/.test(name)) batch.distance = 60;
             else batch.distance = Math.min(180, batch.distance);
@@ -128,10 +166,11 @@ export class DesertProps {
         const mat = new ShaderMaterial(`desert:${pass || 'beauty'}:${source.name}`, this.scene, 'desertProp', {
             shaderLanguage: ShaderLanguage.WGSL,
             attributes: ['position','normal','uv'],
-            defines: pass ? [`#define ${pass}`] : [],
+            defines: [...(pass ? [`#define ${pass}`] : []), ...(batch.windEnabled ? ['#define PROP_WIND'] : [])],
             uniforms: ['world','viewProjection','lightViewProjection','uvMatrix','baseColor','alphaCutoff','gammaDecode','roughness','normalStrength',
                 'cameraPos','cullCenter','cullDistance','sunDir','sunRadiance','shR','cascadeMatrices','cascadeSplits','cascadeParams','shadowTexel','shadowSoftness','shadowBias',
-                'ambientIntensity','fogDensity','fogHeightFalloff','fogStart','aerialStrength','spellLightPos','spellLightCol','spellLightCount'],
+                'ambientIntensity','fogDensity','fogHeightFalloff','fogStart','aerialStrength','spellLightPos','spellLightCol','spellLightCount',
+                'propWind','windTime','windBounds'],
             samplers: ['baseTex','normalTex','roughTex','skyLUT','cascade0','cascade1','cascade2'],
         });
         mat.backFaceCulling = source.backFaceCulling;
@@ -147,12 +186,18 @@ export class DesertProps {
         mat.setFloat('normalStrength', source.bumpTexture ? (source.bumpTexture.level ?? 1) : 0);
         mat.setFloat('cullDistance', batch.distance);
         mat.setFloat('spellLightCount', 0);
+        mat.setVector4('propWind', this.wind);
+        mat.setFloat('windTime', this.windTime);
+        mat.setVector2('windBounds', batch.windBounds);
         mat.setTexture('skyLUT', this.sky.lut);
         for (let i=0;i<3;i++) mat.setTexture(`cascade${i}`,this.shadows.maps[i]);
         this.passes.push({ mat, mesh: batch.mesh, pass });
         return mat;
     }
-    update(camera, focus, force = false) {
+    update(camera, focus, force = false, dt = 0) {
+        this.windTime += dt * S.bushWindSpeed;
+        const angle = S.windDirection * Math.PI / 180;
+        this.wind.set(Math.sin(angle), Math.cos(angle), S.windStrength * S.bushWindStrength, 0);
         this.center.set(focus.x, focus.z);
         if (force || Math.hypot(focus.x-this.last.x,focus.z-this.last.y) > 3) {
             this.last.copyFrom(this.center); this.triangles = 0; this.visibleInstances = 0;
@@ -177,6 +222,7 @@ export class DesertProps {
         this.splits.set(...this.shadows.splits);
         for (const { mat, pass } of this.passes) {
             mat.setVector3('cameraPos',camera); mat.setVector2('cullCenter',this.center);
+            mat.setVector4('propWind', this.wind); mat.setFloat('windTime', this.windTime);
             if (pass) continue;
             mat.setVector3('sunDir',this.sky.sunDir); mat.setColor3('sunRadiance',this.sky.sunRadiance);
             mat.setArray4('shR',this.sky.sh); bindMatrixArray(mat,'cascadeMatrices',this.shadows.matrixData);

@@ -1,13 +1,14 @@
 {
-  "name": "snowflow",
+  "name": "exalted",
   "version": "1.0.0",
-  "description": "Real-time procedural snow rendering tech demo (Babylon.js / WebGPU)",
+  "description": "Exalted world with deformable snow and sand (Babylon.js / WebGPU)",
+  "homepage": "https://exaltedgaming.gg/",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test tests/meshSurface.test.js",
+    "test": "node --test tests/meshSurface.test.js tests/propCollisions.test.js",
     "test:browser": "playwright test"
   },
   "keywords": [
@@ -21,9 +22,14 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@babylonjs/core": "^9.18.0",
+    "@babylonjs/addons": "9.18.0",
+    "@babylonjs/core": "9.18.0",
+    "@babylonjs/gui": "9.18.0",
+    "@babylonjs/gui-editor": "9.18.0",
+    "@babylonjs/inspector": "9.18.0",
     "@babylonjs/loaders": "9.18.0",
-    "@babylonjs/materials": "^9.18.0",
+    "@babylonjs/materials": "9.18.0",
+    "@babylonjs/serializers": "9.18.0",
     "meshoptimizer": "^1.2.0"
   },
   "devDependencies": {

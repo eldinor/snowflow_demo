@@ -16,6 +16,8 @@ import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { ExaltedWorld } from "./exaltedWorld.js";
 import { LocalTerrain } from './localTerrain.js';
 import { GroundProbe } from './groundProbe.js';
+import { VertexData } from '@babylonjs/core/Meshes/mesh.vertexData';
+import { fitPlanarUV } from './planarUV.js';
 
 import { Heightfield, WORLD_SIZE } from "./heightfield.js";
 import { DeformationField } from "./deformation.js";
@@ -54,6 +56,7 @@ export class Terrain {
         this.shadows = shadows;
 
         this.exalted = exalted;
+        this.useDesertTextures = true;
         this.heightfield = exalted ? new ExaltedWorld(scene) : new Heightfield(scene);
 
         /** The terrain state buffer. Feet, the surf wake and every spell write here. */
@@ -101,6 +104,7 @@ export class Terrain {
                 defines: this.exalted ? ["EXALTED_TERRAIN", ...(local ? ['LOCAL_DETAIL'] : [])] : [],
                 uniforms: [
                     "viewProjection", "cameraPos", "lodCenter", "patchCenter",
+                    'desertU','desertV','desertBaseMatrix','desertNormalMatrix','desertColor','desertRoughness','desertNormalScale','desertGamma','useDesertTextures',
                     "baseSpacing", "gridHalfN",
                     "worldOrigin", "worldSize", "heightRes",
                     "windAngle", "macroAmp", "sastrugiAmp",
@@ -118,6 +122,7 @@ export class Terrain {
                 samplers: [
                     "heightTex", "auxTex", "detailTex", "skyLUT", "patchTex",
                     "cascade0", "cascade1", "cascade2", "deformTex",
+                    'desertBaseTex','desertNormalTex',
                 ],
                 shaderLanguage: ShaderLanguage.WGSL,
             }
@@ -132,6 +137,27 @@ export class Terrain {
             mat.setTexture("cascade" + i, this.shadows.maps[i]);
         }
         return mat;
+    }
+
+    /** Borrow the regional ground textures; its mesh is never added to the scene. */
+    setDesertGround(ground) {
+        const data=VertexData.ExtractFromMesh(ground,true,true);
+        data.transform(ground.computeWorldMatrix(true));
+        const uv=fitPlanarUV(data.positions,data.uvs), source=ground.material;
+        if(!source.albedoTexture || !source.bumpTexture) throw new Error('Desert ground must supply colour and normal textures');
+        this.desertGround={material:source.name,uv,roughness:source.roughness,color:source.albedoColor,base:source.albedoTexture,normal:source.bumpTexture};
+        for(const m of this.materials) {
+            m.setVector3('desertU',Vector3.FromArray(uv.u));
+            m.setVector3('desertV',Vector3.FromArray(uv.v));
+            m.setTexture('desertBaseTex',source.albedoTexture);
+            m.setTexture('desertNormalTex',source.bumpTexture);
+            m.setMatrix('desertBaseMatrix',source.albedoTexture.getTextureMatrix());
+            m.setMatrix('desertNormalMatrix',source.bumpTexture.getTextureMatrix());
+            m.setColor3('desertColor',source.albedoColor);
+            m.setFloat('desertRoughness',source.roughness ?? 1);
+            m.setVector2('desertNormalScale',new Vector2(source.bumpTexture.level*(source.invertNormalMapX?-1:1),source.bumpTexture.level*(source.invertNormalMapY?-1:1)));
+            m.setFloat('desertGamma',source.albedoTexture.gammaSpace && !source.albedoTexture._texture?._useSRGBBuffer ? 1 : 0);
+        }
     }
 
     /**
@@ -310,6 +336,7 @@ export class Terrain {
         _lod.set(focus.x, focus.z);
 
         for (const m of this.materials) {
+        m.setFloat('useDesertTextures',this.useDesertTextures ? 1 : 0);
         if (this.local) m.setVector2('patchCenter', this.local.focus);
         m.setVector3("cameraPos", cameraPos);
         m.setVector2("lodCenter", _lod);

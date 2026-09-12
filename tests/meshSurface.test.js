@@ -2,6 +2,20 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { MeshSurface } from "../src/terrain/meshSurface.js";
 import { surfaceWeights, SAND_COLORS } from '../src/terrain/surfaceTypes.js';
+import { fitPlanarUV } from '../src/terrain/planarUV.js';
+
+test('planar texture transfer preserves mirrored axes, metre scale and offsets',()=>{
+    const positions=[-800,0,-500,800,2,-500,-800,3,1100,800,5,1100];
+    const uvs=[];
+    for(let i=0;i<positions.length;i+=3) uvs.push(-positions[i]/3.5,positions[i+2]/3.5+1);
+    const fit=fitPlanarUV(positions,uvs);
+    assert.ok(fit.maxError<1e-10);
+    assert.ok(Math.abs(fit.u[0]+1/3.5)<1e-10);
+    assert.ok(Math.abs(fit.v[1]-1/3.5)<1e-10);
+    assert.ok(Math.abs(fit.v[2]-1)<1e-10);
+    uvs[6]+=1;
+    assert.throws(()=>fitPlanarUV(positions,uvs),/not planar/);
+});
 
 test('authored sand and snow are soft; roads, grass, forest and rock stay firm', () => {
     const weights = new Float32Array(2);

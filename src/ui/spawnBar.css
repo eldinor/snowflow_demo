@@ -1,13 +1,15 @@
 #spawn-bar:not([hidden]) {
     position: fixed;
-    inset: 16px 20px auto;
+    inset: 0 0 auto;
+    height: 48px;
+    box-sizing: border-box;
     z-index: 60;
     display: flex;
     align-items: center;
-    gap: 20px;
-    padding: 10px 12px 10px 20px;
+    gap: 12px;
+    padding: 4px 10px;
     border: 1px solid rgba(211, 226, 238, 0.18);
-    border-radius: 12px;
+    border-radius: 0;
     background: rgba(9, 17, 26, 0.88);
     backdrop-filter: blur(16px);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
@@ -15,11 +17,11 @@
 }
 .spawn-brand { flex: 0 0 auto; }
 .spawn-brand strong { display: block; font-size: 12px; font-weight: 500; letter-spacing: 0.24em; }
-.spawn-brand small { display: block; margin-top: 6px; color: #94a8b9; font-size: 10px; }
+.spawn-brand small { display: block; margin-top: 2px; font-size: 9px; line-height: 11px; color: #a9bac9; }
 #spawn-bar nav { display: flex; flex: 1; min-width: 0; gap: 5px; overflow-x: auto; scrollbar-width: thin; }
 #spawn-bar button {
     flex: 1 0 auto;
-    padding: 9px 12px;
+    padding: 5px 9px;
     border: 1px solid transparent;
     border-radius: 7px;
     background: transparent;
@@ -32,12 +34,28 @@
 #spawn-bar button:hover { background: rgba(160, 199, 225, 0.08); color: #f2f7fb; }
 #spawn-bar button[aria-pressed=true] { background: rgba(143, 196, 232, 0.14); border-color: rgba(143, 196, 232, 0.35); color: #f2f7fb; }
 #spawn-bar button:focus-visible { outline: 2px solid #b7dfff; outline-offset: -2px; }
-.spawn-biome { display: block; margin-bottom: 5px; font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em; color: #8fa9bd; }
+.spawn-biome { display: block; margin-bottom: 2px; font-size: 8px; text-transform: uppercase; letter-spacing: 0.12em; color: #8fa9bd; }
 .spawn-name { display: block; font-size: 12px; white-space: nowrap; }
 .spawn-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 @media (max-width: 700px) {
-    #spawn-bar:not([hidden]) { inset: 10px 10px auto; display: block; padding: 12px; }
-    .spawn-brand { display: flex; align-items: baseline; justify-content: space-between; margin: 0 3px 10px; }
-    .spawn-brand small { margin: 0; }
-    #spawn-bar button { padding: 8px 12px; }
+    #spawn-bar:not([hidden]) { padding: 4px 6px; }
 }
+#terrain-panel:not([hidden]) {
+    position: fixed;
+    top: 48px;
+    left: 0;
+    z-index: 60;
+    width: 190px;
+    box-sizing: border-box;
+    padding: 12px;
+    color: #e3edf5;
+    background: rgba(9, 17, 26, 0.88);
+    border: 1px solid rgba(211, 226, 238, 0.18);
+    border-top: 0;
+    border-radius: 0 0 8px 0;
+    backdrop-filter: blur(16px);
+}
+#terrain-panel h2 { margin: 0 0 8px; font-size: 10px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; color: #94a8b9; }
+#terrain-panel label { display: flex; align-items: center; gap: 8px; min-height: 28px; font-size: 11px; cursor: pointer; white-space: nowrap; }
+#terrain-panel input { margin: 0; accent-color: #9dc7e5; cursor: pointer; }
+#terrain-panel input:focus-visible { outline: 2px solid #b7dfff; outline-offset: 3px; }

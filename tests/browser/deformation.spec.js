@@ -5,22 +5,22 @@ test('sand and snow deform locally with raised rims, grounded readback and hard-
     page.on('pageerror', e => errors.push(e.message));
     page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
     await page.goto('/');
-    await page.waitForFunction(() => globalThis.SNOWFLOW, null, { timeout: 120000 });
+    await page.waitForFunction(() => globalThis.EXALTED, null, { timeout: 120000 });
     await page.waitForTimeout(1100);
     const depths = [];
     for (const id of ['desert-start', 'C5']) {
         await page.locator(`[data-spawn="${id}"]`).click();
         await page.waitForTimeout(250);
         const point = await page.evaluate((id) => {
-            const t = SNOWFLOW.terrain, ch = SNOWFLOW.character;
+            const t = EXALTED.terrain, ch = EXALTED.character;
             // Both starts are on soft terrain; stamp beside the avatar's feet.
             const x = ch.position.x + (id === 'desert-start' ? -5 : 2), z = ch.position.z;
             t.deform.brush(x, z, 0.7, 0.32, 0.16, 0.9, 0, 0, 1, 0);
             return { x, z, weights: [...t.heightfield.weightsAt(x, z)], native: t.heightfield.heightAt(x, z) };
         }, id);
-        await expect.poll(() => page.evaluate(({ x, z }) => SNOWFLOW.terrain.groundProbe.heightAt(x, z), point)).toBeLessThan(-0.05);
+        await expect.poll(() => page.evaluate(({ x, z }) => EXALTED.terrain.groundProbe.heightAt(x, z), point)).toBeLessThan(-0.05);
         const result = await page.evaluate(({ x, z }) => {
-            const t = SNOWFLOW.terrain;
+            const t = EXALTED.terrain;
             let rim = 0;
             for (let r = 0.65; r <= 1; r += 0.025) rim = Math.max(rim, t.groundProbe.heightAt(x + r, z));
             return {
@@ -38,6 +38,31 @@ test('sand and snow deform locally with raised rims, grounded readback and hard-
         expect(result.probeError).toBeUndefined();
         expect(point.weights[id === 'C5' ? 0 : 1]).toBeGreaterThan(0.9);
         depths.push(result.depth);
+        if (id === 'desert-start') {
+            // Appearance switches must preserve an existing impression exactly.
+            await page.evaluate(() => { EXALTED.S.freezeTime = true; });
+            await page.waitForTimeout(300);
+            const before = await page.evaluate(p => EXALTED.terrain.groundProbe.heightAt(p.x,p.z),point);
+            await page.getByLabel('Use procedural textures',{exact:true}).check();
+            await page.waitForTimeout(250);
+            const switched = await page.evaluate(p => ({
+                depth:EXALTED.terrain.groundProbe.heightAt(p.x,p.z),
+                effects:[EXALTED.spray.material,EXALTED.wake.material].map(m=>m._floats.useDesertTextures),
+            }),point);
+            expect(switched.depth).toBeCloseTo(before,5);
+            expect(switched.effects).toEqual([0,0]);
+            await page.getByLabel('Use desert textures',{exact:true}).check();
+            await page.waitForTimeout(250);
+            const restored = await page.evaluate(p => ({
+                depth:EXALTED.terrain.groundProbe.heightAt(p.x,p.z),
+                effects:[EXALTED.spray.material,EXALTED.wake.material].map(m=>m._floats.useDesertTextures),
+                shared:[EXALTED.spray.material,EXALTED.wake.material].every(m=>m._textures.desertBaseTex===EXALTED.terrain.desertGround.base),
+            }),point);
+            expect(restored.depth).toBeCloseTo(before,5);
+            expect(restored.effects).toEqual([1,1]);
+            expect(restored.shared).toBe(true);
+            await page.evaluate(() => { EXALTED.S.freezeTime = false; });
+        }
         await page.locator('#view').focus();
         const key = 'KeyW';
         await page.keyboard.down(key);
@@ -50,7 +75,7 @@ test('sand and snow deform locally with raised rims, grounded readback and hard-
     await page.locator('[data-spawn="C3"]').click();
     await page.waitForTimeout(250);
     const hard = await page.evaluate(() => {
-        const t = SNOWFLOW.terrain, p = SNOWFLOW.character.position;
+        const t = EXALTED.terrain, p = EXALTED.character.position;
         t.deform.brush(p.x, p.z, 1, 0.4, 0.2, 1, 0, 0, 1, 0);
         return { weights: [...t.heightfield.weightsAt(p.x, p.z)], brushes: t.deform._brushCount };
     });

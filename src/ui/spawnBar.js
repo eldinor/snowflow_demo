@@ -2,8 +2,18 @@ import { DEFAULT_SPAWN, SPAWN_POINTS } from "../world/spawnPoints.js";
 import "./spawnBar.css";
 
 export class SpawnBar {
-    constructor(onSelect) {
+    constructor(onSelect, onTextureChange) {
         this.root = document.getElementById("spawn-bar");
+        this.panel = document.getElementById('terrain-panel');
+        const desert = this.panel.querySelector('#use-desert-textures');
+        const procedural = this.panel.querySelector('#use-procedural-textures');
+        const selectTextures = (useDesert) => {
+            desert.checked = useDesert;
+            procedural.checked = !useDesert;
+            onTextureChange?.(useDesert);
+        };
+        desert.addEventListener('change', () => selectTextures(desert.checked));
+        procedural.addEventListener('change', () => selectTextures(!procedural.checked));
         this.buttons = new Map();
         const nav = this.root.querySelector("nav");
         this.status = this.root.querySelector("[role=status]");
@@ -26,7 +36,7 @@ export class SpawnBar {
         this.select(DEFAULT_SPAWN);
     }
 
-    show() { this.root.hidden = false; }
+    show() { this.root.hidden = false; this.panel.hidden = false; }
 
     select(point) {
         for (const [id, button] of this.buttons) {

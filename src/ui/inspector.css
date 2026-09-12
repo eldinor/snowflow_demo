@@ -1,0 +1,12 @@
+#inspector-host:not([hidden]) {
+    position: fixed;
+    top: 48px;
+    right: 0;
+    bottom: 0;
+    width: min(350px, 100vw);
+    z-index: 100;
+    color: #e3edf5;
+    background: #17212b;
+    font: 12px system-ui, sans-serif;
+    isolation: isolate;
+}
