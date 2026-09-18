@@ -5,6 +5,7 @@
  * expanding disc fills depressions, collapses berms, loosens compression and
  * melts glaze; nearby crystal geometry sublimates through its normal lifecycle.
  * One short shared-water strand traces a partly buried, snow-laden runoff seam.
+ * @module spells/thaw
  */
 
 import { PROFILE_TUBE, STRAND_COLS } from "./waterBody.js";
@@ -14,6 +15,7 @@ const LIFE = 4.4;
 const RADIUS = 6.4;
 const COLS = 30;
 
+/** Reverse persistent terrain disturbance around an aimed point while animating a short runoff strand. */
 export class Thaw {
     /** @param {import("./spellSystem.js").SpellContext} ctx */
     constructor(ctx) {
@@ -33,6 +35,7 @@ export class Thaw {
         this._dist = new Float32Array(STRAND_COLS);
     }
 
+    /** Restart a thaw pulse at the world target and orient its runoff strand along the horizontal aim. */
     trigger(x, y, z, aimX, aimZ) {
         if (this.strand < 0) this.strand = this.ctx.water.acquire();
         this.x = x;
@@ -84,7 +87,10 @@ export class Thaw {
         }
     }
 
-    /** @param {number} dt */
+    /**
+     * Expand the recovery pulse and update runoff/mist while reversing terrain disturbance.
+     * @param {number} dt - Simulation seconds.
+     */
     update(dt) {
         if (!this.active) return;
         this.t += dt;
@@ -183,6 +189,7 @@ export class Thaw {
         }
     }
 
+    /** Stop the active spell sequence through its cleanup path; terrain edits are not rolled back. */
     cancel() {
         this._end();
     }

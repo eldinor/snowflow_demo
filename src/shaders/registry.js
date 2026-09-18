@@ -7,6 +7,7 @@
  * Babylon expects: `<name>VertexShader` and `<name>PixelShader`.
  *
  * Import this once, before any material is constructed.
+ * @module shaders/registry
  */
 
 import { ShaderStore } from "@babylonjs/core/Engines/shaderStore";
@@ -151,6 +152,9 @@ const SHADERS = {
 
 let registered = false;
 
+/**
+ * Register raw WGSL entry points and shared includes before any material compiles; generated surface thresholds must match CPU classification.
+ */
 export function registerShaders() {
     if (registered) return;
     registered = true;

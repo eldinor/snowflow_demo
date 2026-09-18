@@ -1,3 +1,8 @@
+/**
+ * Authored placements, compacted into shared geometry/material instance batches.
+ * @module world/desertProps
+ */
+
 import { LoadAssetContainerAsync } from '@babylonjs/core/Loading/sceneLoader';
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import '@babylonjs/core/Meshes/thinInstanceMesh';
@@ -27,6 +32,9 @@ export class DesertProps {
         this.white = RawTexture.CreateRGBATexture(new Uint8Array([255,255,255,255]),1,1,scene,false,false);
         this.flat = RawTexture.CreateRGBATexture(new Uint8Array([128,128,255,255]),1,1,scene,false,false);
     }
+    /**
+     * Extract authored placements into material/geometry batches, build reduced meshes and register collision cylinders independently of visibility. Keep imported materials/textures alive for custom shader bindings.
+     */
     async load() {
         const started = performance.now();
         await MeshoptSimplifier.ready;
@@ -161,6 +169,9 @@ export class DesertProps {
             buriedOver50cm: seats.filter(s => s.clearance < -.5).length,
             seats: seats.sort((a,b) => b.clearance-a.clearance) };
     }
+    /**
+     * Bind shared desert shading for beauty, shadow or depth passes so alpha cutouts and wind displacement agree. Imported PBR metadata supplies supported texture channels.
+     */
     makeMaterial(batch, pass) {
         const source = batch.sourceMaterial;
         const mat = new ShaderMaterial(`desert:${pass || 'beauty'}:${source.name}`, this.scene, 'desertProp', {
@@ -203,6 +214,13 @@ export class DesertProps {
         this.passes.push({ mat, mesh: batch.mesh, pass, instanced: batch.instanced ?? true });
         return mat;
     }
+    /**
+     * Compact near/far instance buffers after sufficient focus movement, then refresh lighting and wind for all passes.
+     * @param camera - World camera position used for shading.
+     * @param focus - World position controlling distance selection.
+     * @param {boolean} force - Rebuild membership even if the focus has barely moved.
+     * @param {number} dt - Wind simulation seconds.
+     */
     update(camera, focus, force = false, dt = 0) {
         this.windTime += dt * S.bushWindSpeed;
         const angle = S.windDirection * Math.PI / 180;
@@ -241,9 +259,13 @@ export class DesertProps {
             mat.setFloat('fogHeightFalloff',S.fogHeightFalloff); mat.setFloat('fogStart',S.fogStart); mat.setFloat('aerialStrength',S.aerialStrength);
         }
     }
+    /**
+     * Compile registered material/pass combinations before interaction to avoid first-use pipeline stalls.
+     */
     async warmUp() {
         for (const { mat, mesh, instanced } of this.passes) await whenReady(mat,mat.name,[mesh,instanced]);
     }
+    /** Release near/far batches, pass materials, retained import container and fallback textures when the owning system is torn down. */
     dispose() {
         for (const b of this.batches) { b.mesh.dispose(); b.far.dispose(); }
         for (const p of this.passes) p.mat.dispose();

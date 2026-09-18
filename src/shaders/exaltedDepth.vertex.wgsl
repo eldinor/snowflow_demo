@@ -1,3 +1,5 @@
+// Shadow placement uses the same imported/detail terrain reconstruction as the visible mesh; independent displacement would detach terrain shadows.
+
 attribute position: vec3f;
 uniform lightViewProjection: mat4x4f;
 #include<exaltedSurface>

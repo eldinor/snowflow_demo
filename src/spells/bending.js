@@ -6,6 +6,7 @@
  * against the world every one of them needs.
  *
  * Nothing here allocates.
+ * @module spells/bending
  */
 
 /** @param {number} v */
@@ -13,6 +14,9 @@ export function clamp01(v) {
     return v < 0 ? 0 : v > 1 ? 1 : v;
 }
 
+/**
+ * Clamp a scalar to caller-provided bounds; shared by spell motion and envelope calculations.
+ */
 export function clampRange(v, lo, hi) {
     return v < lo ? lo : v > hi ? hi : v;
 }
@@ -60,7 +64,9 @@ export function expDamp(cur, target, rate, dt) {
  *
  * Writes the transported right vector into `out[o..o+2]`.
  *
- * @param {Float32Array} out @param {number} o
+ *
+ * @param {Float32Array} out
+ * @param {number} o
  */
 export function transport(out, o, rx, ry, rz, t0x, t0y, t0z, t1x, t1y, t1z) {
     // Axis and angle of the rotation taking t0 to t1.

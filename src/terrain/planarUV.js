@@ -1,3 +1,8 @@
+/**
+ * Recover the supplied planar UV projection without guessing scale or handedness.
+ * @module terrain/planarUV
+ */
+
 /** Recover the supplied planar UV projection without guessing scale or handedness. */
 export function fitPlanarUV(positions, uvs) {
     const x0=positions[0], z0=positions[2];

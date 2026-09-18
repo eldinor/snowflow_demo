@@ -1,3 +1,5 @@
+// Place imported terrain and the local detail variant through the shared surface reconstruction so authored geometry and soft-ground deformation agree.
+
 attribute position: vec3f;
 #ifndef LOCAL_DETAIL
 attribute normal: vec3f;

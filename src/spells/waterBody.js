@@ -21,6 +21,7 @@
  * taking the old tangent to the new one.
  *
  * Allocation per frame: none.
+ * @module spells/waterBody
  */
 
 import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData";
@@ -90,6 +91,7 @@ export const PROFILE_SHEET = 1;
 
 const _splits = new Vector4();
 
+/** Pool swept water strands in one data-driven mesh so spells share rendering and upload costs. */
 export class WaterBody {
     /**
      * @param {import("@babylonjs/core/scene").Scene} scene
@@ -227,15 +229,29 @@ export class WaterBody {
      * perpendicular to the tangent, since the shader re-orthogonalises. It does
      * have to be *transported* — see the note at the top of the file.
      *
+     *
      * @param {number} s strand
+     *
      * @param {number} c column, 0 = head
-     * @param {number} x @param {number} y @param {number} z world position
+     *
+     * @param {number} x
+     * @param {number} y
+     * @param {number} z world position
+     *
      * @param {number} radius metres. Must taper to ~0 at both ends.
-     * @param {number} rx @param {number} ry @param {number} rz reference right
+     *
+     * @param {number} rx
+     * @param {number} ry
+     * @param {number} rz reference right
+     *
      * @param {number} twist section roll (tube) or curl (sheet)
+     *
      * @param {number} dist metres along the spine, drives the relief field
+     *
      * @param {number} age 0..1
+     *
      * @param {number} foam 0..1
+     *
      * @param {number} flatten vertical squash of the section, 1 = round
      */
     column(s, c, x, y, z, radius, rx, ry, rz, twist, dist, age, foam, flatten) {
@@ -370,6 +386,7 @@ export class WaterBody {
         this.mesh.isVisible = false;
     }
 
+    /** Release the shared water renderer and its GPU resources when the owning system is torn down. */
     dispose() {
         this.mesh.dispose();
         this.material.dispose();

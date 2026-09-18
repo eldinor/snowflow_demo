@@ -14,6 +14,7 @@
  * fill up with ice.
  *
  * Allocation per frame: none.
+ * @module spells/crystals
  */
 
 import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData";
@@ -41,6 +42,7 @@ const CRYSTAL_CASCADES = 2;
 
 const _splits = new Vector4();
 
+/** Render a fixed pool of procedural ice prisms using shared geometry and per-crystal data. */
 export class CrystalField {
     /**
      * @param {import("@babylonjs/core/scene").Scene} scene
@@ -181,11 +183,21 @@ export class CrystalField {
     /**
      * Plant one crystal.
      *
-     * @param {number} x @param {number} y @param {number} z base, world
-     * @param {number} ax @param {number} ay @param {number} az growth axis
+     *
+     * @param {number} x
+     * @param {number} y
+     * @param {number} z base, world
+     *
+     * @param {number} ax
+     * @param {number} ay
+     * @param {number} az growth axis
+     *
      * @param {number} height metres at full growth
+     *
      * @param {number} radius metres at full growth
+     *
      * @param {number} growSeconds time from nothing to full size
+     *
      * @param {number} life seconds before it starts sublimating
      */
     plant(x, y, z, ax, ay, az, height, radius, growSeconds, life) {
@@ -369,6 +381,7 @@ export class CrystalField {
         this.mesh.isVisible = false;
     }
 
+    /** Release the pooled crystal renderer and its GPU resources when the owning system is torn down. */
     dispose() {
         this.mesh.dispose();
         this.material.dispose();

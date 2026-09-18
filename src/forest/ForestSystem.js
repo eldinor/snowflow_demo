@@ -1,3 +1,8 @@
+/**
+ * DOM-independent forest rendering, wind, nearby shadows and collision data.
+ * @module forest/ForestSystem
+ */
+
 import { LoadAssetContainerAsync } from '@babylonjs/core/Loading/sceneLoader';
 import '@babylonjs/loaders/glTF';
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
@@ -25,6 +30,11 @@ import fragment from './forest.fragment.wgsl?raw';
 
 /** Reusable forest renderer. No DOM, input handlers or dependency on main-page settings. */
 export class ForestSystem {
+    /**
+     * Create scene-owned shadow resources; call load before update. The caller retains camera, movement and terrain ownership.
+     * @param scene - Babylon scene using the left-handed world convention.
+     * @param options - Asset base URL, optional heightAt(x,z) in metres and initial forest settings.
+     */
     constructor(scene,{heightAt,assetBase=`${import.meta.env.BASE_URL}assets/forest-demo/`,options={}}={}) {
         Object.assign(this,{scene,heightAt,assetBase});this.options={...DEFAULTS,...options};
         this.prototypes=[];this.materials=[];this.batches=[];this.textures=[];this.time=0;this.lastUpdate=-Infinity;
@@ -39,6 +49,9 @@ export class ForestSystem {
         this.shadowMap.renderParticles=false;this.shadowMap.renderSprites=false;this.shadowMap.renderList=[];
         scene.customRenderTargets.push(this.shadowMap);
     }
+    /**
+     * Create matching beauty/shadow shader variants. Shape encodes local base height, height span, bend and flutter; grayscale foliage is tinted once before card baking.
+     */
     material(source,shape,defines=[]) {
         const mat=new ShaderMaterial(`forest:${source.name||'surface'}:${defines.join()}`,this.scene,'forest',{
             shaderLanguage:ShaderLanguage.WGSL,attributes:['position','normal','uv',...(defines.includes('GROUND')?['color']:[])],
@@ -57,6 +70,12 @@ export class ForestSystem {
         mat.setVector3('cameraPos',Vector3.Zero());mat.setFloat('fogDensity',0);mat.setFloat('shadowEnabled',0);mat.setFloat('shadowTexel',1/SHADOW_RESOLUTION);
         mat.setTexture('shadowTex',defines.includes('SHADOW_PASS')?this.white:this.shadowMap);this.materials.push(mat);return mat;
     }
+    /**
+     * Load prototypes and placements, prepare reduced geometry/cards, then allocate independent chunk bindings and trunk colliders.
+     * @param onProgress - Optional status callback during preparation.
+     * @returns {Promise<void>} Resolves when update can select live batches.
+     * @remarks Call once per renderer. Asset length mismatch and unrecognized prototypes fail explicitly.
+     */
     async load(onProgress=()=>{}) {
         const start=performance.now();
         const [manifestResponse,placementResponse]=await Promise.all([fetch(`${this.assetBase}manifest.json`),fetch(`${this.assetBase}placements.bin`)]);
@@ -139,6 +158,10 @@ export class ForestSystem {
         this.stats.grounding={median:this.alignment[Math.floor(this.alignment.length/2)]||0,min:this.alignment[0]||0,max:this.alignment.at(-1)||0,
             over20cm:this.alignment.filter(v=>Math.abs(v)>.2).length};
     }
+    /**
+     * Render a tree prototype into a transparent atlas for crossed distant cards. Matching the render-target V orientation prevents upside-down trees.
+     * @param model - Prepared prototype whose full-detail parts supply the baked image.
+     */
     async bakeImpostor(model) {
         const scene=this.scene,engine=scene.getEngine(),height=model.max.y-model.min.y;
         const width=Math.max(model.max.x-model.min.x,model.max.z-model.min.z)*1.12;
@@ -161,7 +184,13 @@ export class ForestSystem {
         const source={name:`tree-${model.id}-impostor`,albedoTexture:texture,alphaCutOff:.35};
         model.impostor={original:mesh,beauty:this.material(source,new Vector4(model.min.y,height,.005,0),['IMPOSTOR'])};
     }
+    /**
+     * Create the benchmark-only vertex-colour ground shader. Main-world integration should keep its existing ground material.
+     */
     createGroundMaterial(){return this.material({name:'ground'},new Vector4(),['GROUND']);}
+    /**
+     * Apply partial settings and invalidate batch selection. Grounding changes also move trunk colliders and refresh chunk bounds; density changes affect rendering only.
+     */
     configure(values){
         const wasGrounded=this.options.grounded;
         Object.assign(this.options,values);this.force=true;
@@ -178,6 +207,12 @@ export class ForestSystem {
             }
         }
     }
+    /**
+     * Select LOD instances after camera travel, update world-aligned shadows and GPU wind, and publish visibility statistics.
+     * @param camera - Active Babylon camera; its position controls distance selection.
+     * @param {number} dt - Simulation seconds, not milliseconds.
+     * @remarks Call before scene.render(). Primitive-instance statistics count wood and foliage separately.
+     */
     update(camera,dt) {
         const begin=performance.now(),o=this.options;if(!o.freeze)this.time+=dt*o.windSpeed;
         const position=camera.position;
@@ -213,6 +248,9 @@ export class ForestSystem {
         for(const b of this.batches)if(b.mesh.isEnabled()&&b.mesh.isInFrustum(planes)){draws++;visible+=b.mesh.thinInstanceCount;triangles+=b.mesh.thinInstanceCount*b.mesh.getTotalIndices()/3;}
         Object.assign(this.stats,{visiblePrimitiveInstances:visible,visibleTriangles:triangles,visibleBatches:draws,cpuUpdateMs:performance.now()-begin});
     }
+    /**
+     * Release owned meshes, materials, atlases, shadow target and imported prototypes. Caller-owned terrain and camera are retained.
+     */
     dispose() {
         const targets=this.scene.customRenderTargets,index=targets.indexOf(this.shadowMap);if(index>=0)targets.splice(index,1);
         this.shadowMap.dispose();this.shadowCamera.dispose();this.batches.forEach(b=>b.mesh.dispose());

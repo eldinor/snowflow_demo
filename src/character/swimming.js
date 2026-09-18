@@ -1,6 +1,21 @@
+/**
+ * Surface swimming uses depth hysteresis and swept collisions to avoid shoreline flicker and tunnelling.
+ * @module character/swimming
+ */
+
 export const SWIM_DRAFT = .95;
+/** Take control in sufficiently deep lake water and release to walking at shallow edges. */
 export class Swimming {
     constructor(){this.active=false;this.time=0;this.justEntered=false;}
+    /**
+     * Take over movement only where visible lake depth supports swimming. Entry/exit thresholds differ to prevent shoreline flicker.
+     * @param {number} dt - Simulation seconds; nonpositive values preserve the current state.
+     * @param ch - Controller mutated by horizontal collision and surface buoyancy.
+     * @param input - Movement axes and sprint state.
+     * @param forward - Horizontal camera-forward basis.
+     * @param right - Horizontal camera-right basis.
+     * @returns {boolean} Whether swimming consumed the frame, including a shallow-water exit.
+     */
     update(dt,ch,input,forward,right) {
         this.justEntered=false;
         if(dt<=0)return this.active;

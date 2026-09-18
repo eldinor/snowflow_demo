@@ -12,6 +12,7 @@
  * reads as a glow pasted over a scene rather than as a light in it.
  *
  * Allocation per frame: none.
+ * @module spells/spellLights
  */
 
 /** Must match `SPELL_LIGHT_MAX` in `lib/spellLights.wgsl`. */
@@ -25,6 +26,7 @@ export const SPELL_LIGHT_UNIFORMS = [
     "spellLightPos", "spellLightCol", "spellLightCount",
 ];
 
+/** Collect a bounded set of per-frame spell lights shared by all participating materials. */
 export class SpellLights {
     constructor() {
         /** (x, y, z, radius) per slot. */
@@ -49,9 +51,17 @@ export class SpellLights {
      * and the alternative — growing the array — means a shader loop the whole
      * snow field pays for.
      *
-     * @param {number} x @param {number} y @param {number} z
+     *
+     * @param {number} x
+     * @param {number} y
+     * @param {number} z
+     *
      * @param {number} radius metres; the falloff reaches exactly zero here
-     * @param {number} r @param {number} g @param {number} b linear, unnormalised
+     *
+     * @param {number} r
+     * @param {number} g
+     * @param {number} b linear, unnormalised
+     *
      * @param {number} intensity
      */
     add(x, y, z, radius, r, g, b, intensity) {

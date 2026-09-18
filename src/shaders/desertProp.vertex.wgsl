@@ -1,3 +1,5 @@
+// Shared desert prop placement for beauty, shadow and depth. Apply identical instance transforms and wind in all passes to prevent detached shadows.
+
 attribute position: vec3f;
 attribute normal: vec3f;
 attribute uv: vec2f;

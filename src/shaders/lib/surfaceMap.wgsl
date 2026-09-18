@@ -1,3 +1,5 @@
+// Sample the world-aligned soft-surface mask shared by GPU deformation consumers; CPU thresholds are generated alongside the shader source.
+
 var surfaceMap: texture_2d<f32>;
 var surfaceMapSampler: sampler;
 uniform surfaceOrigin: vec2f;

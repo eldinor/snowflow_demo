@@ -1,3 +1,8 @@
+/**
+ * Retessellates source triangles without changing their planes or outer edges.
+ * @module terrain/localTerrain
+ */
+
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { VertexData } from '@babylonjs/core/Meshes/mesh.vertexData';
 import { RawTexture } from '@babylonjs/core/Materials/Textures/rawTexture';
@@ -10,6 +15,9 @@ const CAPACITY = 512;
 
 /** Retessellates source triangles without changing their planes or outer edges. */
 export class LocalTerrain {
+    /**
+     * Allocate a fixed-capacity barycentric detail mesh and nine texture rows per source triangle: three positions, three normals and three colours.
+     */
     constructor(scene, world, coarse) {
         this.world = world;
         this.coarse = coarse;
@@ -51,6 +59,11 @@ export class LocalTerrain {
         }
     }
 
+    /**
+     * Retessellate nearby soft triangles only after an 8 m cell change, excluding those triangles from the coarse mesh to prevent z-fighting.
+     * @param focus - World position whose X/Z determines the detail patch.
+     * @returns {boolean} Whether the geometry selection and GPU triangle table changed.
+     */
     update(focus) {
         this.focus.set(focus.x, focus.z);
         const x = Math.round(focus.x / 8) * 8, z = Math.round(focus.z / 8) * 8;
@@ -95,5 +108,6 @@ export class LocalTerrain {
         return true;
     }
 
+    /** Release the detail triangle table and render mesh when the owning system is torn down. */
     dispose() { this.texture.dispose(); this.mesh.dispose(); }
 }

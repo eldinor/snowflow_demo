@@ -1,3 +1,5 @@
+// Pass persistent water geometry and packed depth/flow metadata to the lake/river shader; prepass and visible geometry share placement.
+
 attribute position: vec3f;
 attribute normal: vec3f;
 attribute color: vec4f;

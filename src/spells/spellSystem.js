@@ -17,6 +17,7 @@
  * terrain.
  *
  * Allocation per frame: none.
+ * @module spells/spellSystem
  */
 
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
@@ -58,6 +59,7 @@ import { aimPoint, clamp01 } from "./bending.js";
 const _aim = new Float32Array(3);
 const _hand = new Float32Array(3);
 
+/** Coordinate input, spell lifecycles and shared pools in the order required by deformation and lighting. */
 export class SpellSystem {
     /**
      * @param {import("@babylonjs/core/scene").Scene} scene
@@ -204,6 +206,9 @@ export class SpellSystem {
         this.crystals.update(dt, cameraPos);
     }
 
+    /**
+     * Translate current spell selection and input edges into spell-specific actions; shared pools are updated later in the frame.
+     */
     _dispatch() {
         // Ribbon is a hold, so it is polled rather than edge-triggered.
         // `debugRibbon` lets the console hold it without synthesising a key
@@ -330,6 +335,9 @@ export class SpellSystem {
         }
     }
 
+    /**
+     * Reset transient spell activity for a world/spawn reset; delegate cancellation to individual spell lifecycles.
+     */
     reset() {
         this._cancelAll();
         this.castBlend = 0;
@@ -388,6 +396,7 @@ export class SpellSystem {
         this.crystals.finishWarmUp();
     }
 
+    /** Release the shared spell-water and crystal renderers when the owning system is torn down. */
     dispose() {
         this.water.dispose();
         this.crystals.dispose();

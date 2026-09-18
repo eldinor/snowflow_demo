@@ -16,6 +16,7 @@
  * writes brushes into the terrain state buffer at the position the mesh is
  * actually drawing, so the mark and the wave cannot disagree — the same rule the
  * plume follows in the surf wake.
+ * @module spells/sweep
  */
 
 import { PROFILE_SHEET } from "./waterBody.js";
@@ -50,6 +51,7 @@ const LIFE = 2.4;
  */
 const PEAK = 2.15;
 
+/** Move a crescent water sheet and write deformation at the visible crest position. */
 export class Sweep {
     /** @param {import("./spellSystem.js").SpellContext} ctx */
     constructor(ctx) {
@@ -68,7 +70,10 @@ export class Sweep {
         this._sprayOwed = 0;
     }
 
-    /** @param {number} ax @param {number} az flat aim direction */
+    /**
+     * @param {number} ax
+     * @param {number} az flat aim direction
+     */
     trigger(ax, az) {
         const ctx = this.ctx;
         const ch = ctx.controller;
@@ -91,7 +96,10 @@ export class Sweep {
         this.active = true;
     }
 
-    /** @param {number} dt */
+    /**
+     * Advance the crescent and write deformation where its visible crest touches the ground.
+     * @param {number} dt - Simulation seconds.
+     */
     update(dt) {
         if (!this.active) return;
         const ctx = this.ctx;
@@ -318,6 +326,7 @@ export class Sweep {
         }
     }
 
+    /** Stop the active spell sequence through its cleanup path; terrain edits are not rolled back. */
     cancel() {
         this._end();
     }

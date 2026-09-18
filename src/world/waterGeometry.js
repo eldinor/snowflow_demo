@@ -1,3 +1,8 @@
+/**
+ * Blue is a region mask, not an elevation. Clip before raising the lake.
+ * @module world/waterGeometry
+ */
+
 /** Blue is a region mask, not an elevation. Clip before raising the lake. */
 export function blueWater(r,g,b) { return b > r + .12 && b > g + .1 && r < .3 ? 1 : 0; }
 
@@ -27,6 +32,13 @@ function riverDistance(x,z,line) {
     }
     return nearest;
 }
+/**
+ * Clip the blue vertex mask to the lake level and authored river corridor. Lake colour.r stores depth; river colour stores flow and slope for rendering and spray.
+ * @param data - Terrain positions, indices and RGBA biome colours in Babylon world space.
+ * @param reference - Lake polygon and river polyline in chart coordinates; X/Z signs are converted here.
+ * @param {number} level - Lake elevation in world metres.
+ * @returns Lake/river mesh data plus the lake level; source arrays are not mutated.
+ */
 export function buildWaterGeometry(data,reference,level=0) {
     const lake={positions:[],normals:[],colors:[],indices:[]},river={positions:[],normals:[],colors:[],indices:[]};
     // Chart east/north -> the same Babylon frame used by spawn points.

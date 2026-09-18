@@ -18,6 +18,7 @@
  * The column leans. A perfectly vertical cylinder of water reads as a rendered
  * primitive no matter what is on it, and two degrees of drift with a little
  * sway takes that away completely.
+ * @module spells/bloom
  */
 
 import { PROFILE_TUBE } from "./waterBody.js";
@@ -41,6 +42,7 @@ const FALLOUT = 3.4;
 
 const _rgt = new Float32Array(3);
 
+/** Coordinate a targeted eruption, immediate crater and longer-lived fallout on separate envelopes. */
 export class Bloom {
     /** @param {import("./spellSystem.js").SpellContext} ctx */
     constructor(ctx) {
@@ -58,7 +60,11 @@ export class Bloom {
         this._curtainOwed = 0;
     }
 
-    /** @param {number} x @param {number} y @param {number} z ground target */
+    /**
+     * @param {number} x
+     * @param {number} y
+     * @param {number} z ground target
+     */
     trigger(x, y, z) {
         if (this.strand < 0) this.strand = this.ctx.water.acquire();
         this.x = x;
@@ -75,7 +81,10 @@ export class Bloom {
         this.active = true;
     }
 
-    /** @param {number} dt */
+    /**
+     * Advance eruption, deformation and fallout envelopes without making their different lifetimes identical.
+     * @param {number} dt - Simulation seconds.
+     */
     update(dt) {
         if (!this.active) return;
         const ctx = this.ctx;
@@ -306,6 +315,7 @@ export class Bloom {
         }
     }
 
+    /** Stop the active spell sequence through its cleanup path; terrain edits are not rolled back. */
     cancel() {
         this._end();
     }

@@ -28,6 +28,8 @@
  * without needing a special case for it.
  *
  * Allocation: none per frame. All state is typed arrays sized at construction.
+ *
+ * @module character/cloth
  */
 
 import { S } from "../core/settings.js";
@@ -44,6 +46,7 @@ const C_LEGS = 2;
 const C_ARM_L = 4;
 const C_ARM_R = 8;
 
+/** Store one garment control grid, attachment targets and rest lengths independently of render tessellation. */
 export class ClothPanel {
     constructor(spec) {
         this.name = spec.name;
@@ -320,6 +323,9 @@ function makeSleeve(side) {
     return p;
 }
 
+/**
+ * Create the fixed robe, mantle and sleeve control grids expected by the cloth renderer and transform-texture layout.
+ */
 export function makePanels() {
     return [makeRobe(), makeMantle(), makeSleeve(0), makeSleeve(1)];
 }
@@ -344,6 +350,7 @@ const CAPSULES = [
     [B_FORE_R, B_HAND_R, 0.068, C_ARM_R],
 ];
 
+/** Integrate garment particles against body and ground constraints using the current procedural pose. */
 export class ClothSolver {
     /**
      * @param {ClothPanel[]} panels

@@ -1,3 +1,8 @@
+/**
+ * Timed flight, controlled descent and collision-aware landing; cooldown starts after landing.
+ * @module character/flight
+ */
+
 export const FLIGHT_DURATION = 15;
 export const FLIGHT_COOLDOWN = 5;
 export const FLIGHT_HEIGHT = 8;
@@ -11,6 +16,15 @@ export class Flight {
         this.elapsed = 0;
         this.justStarted = false;
     }
+    /**
+     * Advance the flight timer and substep airborne movement against terrain, water and props.
+     * @param {number} dt - Elapsed simulation seconds; nonpositive values freeze movement.
+     * @param ch - Mutable controller whose position, velocity and ground support are updated.
+     * @param input - Movement axes and flight button state.
+     * @param forward - Camera-relative horizontal forward vector.
+     * @param right - Camera-relative horizontal right vector.
+     * @returns {boolean} Whether flight handled this frame, including its final landing frame.
+     */
     update(dt, ch, input, forward, right) {
         this.justStarted = false;
         if (dt <= 0) return this.active;

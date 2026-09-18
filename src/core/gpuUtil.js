@@ -9,6 +9,7 @@
  * Everything here exists so that compilation happens behind the loading screen:
  * a shader that first compiles when the player casts a spell is a
  * multi-hundred-millisecond freeze.
+ * @module core/gpuUtil
  */
 
 /**

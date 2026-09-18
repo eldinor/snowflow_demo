@@ -1,3 +1,5 @@
+// Bake local displacement for asynchronous CPU grounding. This returns an offset, not the authored absolute terrain elevation.
+
 #include<exaltedSurface>
 #include<surfaceMap>
 varying vUV: vec2f;

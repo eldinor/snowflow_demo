@@ -1,3 +1,8 @@
+/**
+ * Inspector code and its UI dependencies are fetched only on the first Ctrl+I.
+ * @module ui/inspector
+ */
+
 import { resetInput } from '../core/input.js';
 import './inspector.css';
 

@@ -1,3 +1,8 @@
+/**
+ * Explicit Playwright inspection of desert placement and LOD diagnostics. Requires a running dev server and user authorization to run browser automation; writes report and screenshot artifacts.
+ * @module scripts/inspect-desert
+ */
+
 import { chromium } from '@playwright/test';
 import fs from 'node:fs/promises';
 const browser = await chromium.launch({channel:'chrome',args:['--enable-unsafe-webgpu','--ignore-gpu-blocklist']});

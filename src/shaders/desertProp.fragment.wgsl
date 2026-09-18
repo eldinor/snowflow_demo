@@ -1,3 +1,5 @@
+// Custom desert shading consumes supported imported texture channels, world shadows and spell lights. Shadow/prepass variants retain alpha and distance discard; emission bypasses lighting but receives fog.
+
 #include<snowNoise>
 varying vWorld: vec3f;
 varying vNormal: vec3f;

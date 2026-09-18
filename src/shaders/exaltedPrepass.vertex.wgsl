@@ -1,3 +1,5 @@
+// Depth-prepass placement mirrors visible imported terrain displacement so screen-space effects see the same surface.
+
 attribute position: vec3f;
 uniform viewProjection: mat4x4f;
 varying vViewZ: f32;

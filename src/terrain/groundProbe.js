@@ -1,3 +1,8 @@
+/**
+ * Small asynchronous readback of GPU displacement for feet/camera grounding.
+ * @module terrain/groundProbe
+ */
+
 import { ProceduralTexture } from '@babylonjs/core/Materials/Textures/Procedurals/proceduralTexture';
 import { Constants } from '@babylonjs/core/Engines/constants';
 import { ShaderLanguage } from '@babylonjs/core/Materials/shaderLanguage';
@@ -24,6 +29,9 @@ export class GroundProbe {
         this.texture.setVector2('surfaceExtent', terrain.heightfield.extent);
         this.bind({ x: -65, z: 604 });
     }
+    /**
+     * Bind current terrain/deformation textures and snap the local 16 m probe to its sampling grid.
+     */
     bind(focus) {
         const t = this.terrain, p = this.texture;
         this.origin.set(Math.floor(focus.x * 8) / 8 - SIZE / 2, Math.floor(focus.z * 8) / 8 - SIZE / 2);
@@ -35,7 +43,13 @@ export class GroundProbe {
         p.setVector2('probeOrigin', this.origin);
         p.setFloat('probeSize', SIZE);
     }
+    /**
+     * Wait for the probe shader to become ready before the interactive frame loop uses it.
+     */
     async warmUp() { await whenReady(this.texture, 'grounding probe'); }
+    /**
+     * Schedule a throttled local probe render when detailed terrain is available; do not block on readback here.
+     */
     update(focus) {
         if (!this.terrain.local.triangleCount) { this.cache = null; return; }
         if (this.pending || performance.now() - this.lastRead < 100) return;
@@ -43,6 +57,9 @@ export class GroundProbe {
         this.texture.render();
         this.readyToRead = true;
     }
+    /**
+     * Read the rendered probe asynchronously after submission. An epoch rejects results from before a teleport/reset.
+     */
     afterFrame() {
         if (!this.readyToRead || this.pending) return;
         this.readyToRead = false;
@@ -54,6 +71,9 @@ export class GroundProbe {
             this.cache = { data: raw, stride: raw.length / (RES * RES), x, z };
         }).catch(error => { this.error = String(error); }).finally(() => { this.pending = false; });
     }
+    /**
+     * Return cached displacement, not absolute terrain elevation. Missing/outside samples return zero; the exact biome mask prevents displacement on firm ground.
+     */
     heightAt(x, z) {
         const c = this.cache;
         if (!c) return 0;
@@ -68,6 +88,10 @@ export class GroundProbe {
             + (c.data[i + row] * (1 - tx) + c.data[i + row + c.stride] * tx) * tz)
             * (weights[0] + weights[1]);
     }
+    /**
+     * Invalidate cached samples and outstanding readback results so a teleport cannot reuse old ground offsets.
+     */
     reset() { this.epoch++; this.cache = null; this.lastRead = -Infinity; this.readyToRead = false; }
+    /** Release the probe texture after invalidating pending readbacks when the owning system is torn down. */
     dispose() { this.reset(); this.texture.dispose(); }
 }

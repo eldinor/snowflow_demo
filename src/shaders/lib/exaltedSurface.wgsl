@@ -1,3 +1,5 @@
+// Reconstruct imported/detail ground and mask deformation with matching biome weights; preserve source triangle planes and patch boundaries.
+
 #include<snowDeform>
 #include<surfaceTypes>
 

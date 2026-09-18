@@ -1,8 +1,17 @@
+/**
+ * Spawn navigation and texture/wind controls backed by shared world settings.
+ * @module ui/spawnBar
+ */
+
 import { DEFAULT_SPAWN, SPAWN_POINTS } from "../world/spawnPoints.js";
 import { S, SCHEMA, set, onChange } from '../core/settings.js';
 import "./spawnBar.css";
 
+/** Keep spawn navigation and compact texture/wind controls separate from world simulation. */
 export class SpawnBar {
+    /**
+     * Wire existing HTML controls to caller-owned navigation and texture changes, and subscribe wind widgets to shared settings.
+     */
     constructor(onSelect, onTextureChange) {
         this.root = document.getElementById("spawn-bar");
         this.panel = document.getElementById('terrain-panel');
@@ -62,8 +71,12 @@ export class SpawnBar {
         this.select(DEFAULT_SPAWN);
     }
 
+    /** Reveal navigation and its panel after the world becomes usable. */
     show() { this.root.hidden = false; this.panel.hidden = false; }
 
+    /**
+     * Update selected destination styling and caption after navigation; does not move the avatar itself.
+     */
     select(point) {
         for (const [id, button] of this.buttons) {
             button.setAttribute("aria-pressed", String(id === point.id));

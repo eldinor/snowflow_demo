@@ -1,9 +1,17 @@
+/**
+ * Reuses the bounded particle pool; no per-waterfall draw calls.
+ * @module vfx/waterEffects
+ */
+
 /** Reuses the bounded particle pool; no per-waterfall draw calls. */
 export class WaterEffects {
     constructor(water,terrain,character,spray) {
         Object.assign(this,{water,terrain,character,spray});
         this.near=[];this.selectTime=0;this.emission=0;this.stroke=0;this.wasFlying=false;this.splashDelay=0;
     }
+    /**
+     * Emit a bounded radial burst into the shared spray pool and request a lake ripple at world coordinates.
+     */
     splash(x,y,z,strength=1) {
         for(let i=0;i<Math.round(24*strength);i++) {
             const angle=i*2.39996,dx=Math.cos(angle),dz=Math.sin(angle),speed=1.3+(i%5)*.35;
@@ -11,6 +19,11 @@ export class WaterEffects {
         }
         this.water.ripple(x,z,strength);
     }
+    /**
+     * Throttle selection of at most twelve nearby waterfall emitters, then add swimming strokes and landing splashes from controller transitions.
+     * @param {number} dt - Simulation seconds; nonpositive values freeze emission.
+     * @param camera - World camera position used to limit nearby spray work.
+     */
     update(dt,camera) {
         if(dt<=0)return;
         this.selectTime-=dt;this.splashDelay=Math.max(0,this.splashDelay-dt);

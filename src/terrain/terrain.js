@@ -4,6 +4,7 @@
  *
  * The procedural clipmap has fixed geometry. Exalted replaces nearby soft
  * triangles with a reusable detail mesh, updating its patch every eight metres.
+ * @module terrain/terrain
  */
 
 import { Vector2, Vector3, Vector4 } from "@babylonjs/core/Maths/math.vector";
@@ -44,6 +45,7 @@ const DEBUG_MODES = {
     albedo: 10,
 };
 
+/** Coordinate imported/procedural terrain, deformation, materials and depth/shadow integration. */
 export class Terrain {
     /**
      * @param {import("@babylonjs/core/scene").Scene} scene
@@ -226,6 +228,9 @@ export class Terrain {
         return mat;
     }
 
+    /**
+     * Prepare the chosen terrain source and dependent render resources before interactive updates; imported and procedural sources share the outer interface.
+     */
     async build() {
         this.detailTex.setFloat("resolution", DETAIL_RES);
         // Tilts a grain dome's flank to roughly 30 degrees. Higher reads as
@@ -437,17 +442,27 @@ export class Terrain {
         this.groundProbe?.update(focus);
     }
 
+    /**
+     * Register terrain depth variants so displaced visible ground and post-processing depth agree.
+     */
     registerPrepass(pass) {
         pass.registerCaster(this.mesh, this.makePrepassMaterial());
         if (this.local) pass.registerCaster(this.local.mesh, this.makePrepassMaterial(true));
     }
 
-    /** @param {number} x @param {number} z */
+    /**
+     * @param {number} x
+     * @param {number} z
+     */
     heightAt(x, z) {
         return this.heightfield.heightAt(x, z) + (this.groundProbe?.heightAt(x, z) || 0);
     }
 
-    /** @param {number} x @param {number} z @param {Vector3} out */
+    /**
+     * @param {number} x
+     * @param {number} z
+     * @param {Vector3} out
+     */
     normalAt(x, z, out) {
         this.heightfield.normalAt(x, z, out);
         if (this.groundProbe) {
@@ -459,6 +474,7 @@ export class Terrain {
         return out;
     }
 
+    /** Release terrain-owned rendering and simulation resources when the owning system is torn down. */
     dispose() {
         this.local?.dispose();
         this.groundProbe?.dispose();

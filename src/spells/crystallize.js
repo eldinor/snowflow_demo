@@ -19,6 +19,7 @@
  * The prisms are planted along a short *spiral* rather than in a disc. A random
  * scatter reads as scattered; a spiral with the crystals getting shorter as they
  * go out reads as something that grew from a centre, which is what it is.
+ * @module spells/crystallize
  */
 
 import { clamp01, smooth01 } from "./bending.js";
@@ -30,6 +31,7 @@ const COUNT = 34;
 /** Seconds the formation stands at full size before sublimating. */
 const STAND = 34;
 
+/** Grow pooled ice formations while leaving a longer-lived glaze in the terrain state. */
 export class Crystallize {
     /** @param {import("./spellSystem.js").SpellContext} ctx */
     constructor(ctx) {
@@ -43,7 +45,11 @@ export class Crystallize {
         this._seed = 0;
     }
 
-    /** @param {number} x @param {number} y @param {number} z ground target */
+    /**
+     * @param {number} x
+     * @param {number} y
+     * @param {number} z ground target
+     */
     trigger(x, y, z) {
         this.x = x;
         this.y = y;
@@ -70,7 +76,10 @@ export class Crystallize {
         }
     }
 
-    /** @param {number} dt */
+    /**
+     * Grow the formation and write its persistent glaze while managing the spell envelope.
+     * @param {number} dt - Simulation seconds.
+     */
     update(dt) {
         if (!this.active) return;
         const ctx = this.ctx;
@@ -178,6 +187,7 @@ export class Crystallize {
         }
     }
 
+    /** Stop the active spell sequence through its cleanup path; terrain edits are not rolled back. */
     cancel() {
         this.active = false;
     }

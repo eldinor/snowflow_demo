@@ -21,6 +21,8 @@
  * it, so the seam is smooth too.
  *
  * Build time only — none of this runs after load, and it allocates freely.
+ *
+ * @module character/build
  */
 
 import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData";
@@ -70,16 +72,19 @@ class Builder {
         return this.pos.length / 3 - 1;
     }
 
+    /** Write an authored normal for surfaces whose local frame is more useful than an averaged mesh normal. */
     normal(vi, x, y, z) {
         this.nrm[vi * 3] = x;
         this.nrm[vi * 3 + 1] = y;
         this.nrm[vi * 3 + 2] = z;
     }
 
+    /** Append an indexed triangle to the procedural mesh builder. */
     tri(a, b, c) {
         this.idx.push(a, b, c);
     }
 
+    /** Split a four-corner surface into the builder's consistent triangle winding. */
     quad(a, b, c, d) {
         // Both diagonals of every quad get used across the mesh, alternating is
         // not worth the bookkeeping on shapes this smooth.

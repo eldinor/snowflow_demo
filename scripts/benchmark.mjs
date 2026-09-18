@@ -1,3 +1,8 @@
+/**
+ * Explicit browser benchmark across named spawns. Requires a running dev server and launches Playwright; do not invoke without user authorization. Records presentation frame timing, not GPU timestamps.
+ * @module scripts/benchmark
+ */
+
 import fs from 'node:fs/promises';
 import { chromium } from '@playwright/test';
 const browser = await chromium.launch({ channel: process.env.PLAYWRIGHT_CHANNEL || 'chrome', args: ['--enable-unsafe-webgpu', '--ignore-gpu-blocklist'] });

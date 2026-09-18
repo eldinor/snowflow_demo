@@ -1,6 +1,17 @@
+/**
+ * Matching CPU and WGSL biome thresholds restrict deformation to authored snow and sand.
+ * @module terrain/surfaceTypes
+ */
+
 // Measured COLOR_0 values in alpha-map.glb at the Rev B region centres.
 export const SAND_COLORS = [[0.822782, 0.679545, 0.417884], [0.760525, 0.630762, 0.401984]];
 const smooth = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+/**
+ * Write [snow, sand] softness from the authored RGB palette. Roads, grass and rock remain firm; GPU consumers use the matching surfaceWGSL thresholds.
+ * @param color - RGB components in [0, 1].
+ * @param out - Mutable two-component output array.
+ * @returns The same output array, avoiding allocations during grounding.
+ */
 export function surfaceWeights(color, out) {
     out[0] = smooth(0.75, 0.87, Math.min(color[0], color[1], color[2]));
     const a = SAND_COLORS[0], b = SAND_COLORS[1];

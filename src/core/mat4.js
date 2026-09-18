@@ -3,10 +3,10 @@
  *
  * Babylon's `Matrix` is perfectly good and is used everywhere a matrix crosses
  * into the engine. This exists for the one place it does not fit: the character
- * skeleton keeps twenty bone matrices, their inverse binds and their skinning
+ * skeleton keeps eighteen bone matrices, their inverse binds and their skinning
  * products in three contiguous `Float32Array`s, because the last of those is
  * uploaded to the GPU verbatim every frame. Wrapping each of those in an object
- * would mean sixty `Matrix` instances and a copy per bone per frame to flatten
+ * would mean fifty-four `Matrix` instances and a copy per bone per frame to flatten
  * them again.
  *
  * Layout matches Babylon's, which is also what WGSL wants: read as column-major,
@@ -14,11 +14,14 @@
  * translation, so `M * vec4(p, 1)` in a shader is the local-to-world transform.
  *
  * Every function takes explicit array + offset. Nothing here allocates.
+ * @module core/mat4
  */
 
 /**
  * Write a rigid frame: three orthonormal axes and an origin.
- * @param {Float32Array} out @param {number} o element offset (16 per matrix)
+ *
+ * @param {Float32Array} out
+ * @param {number} o element offset (16 per matrix)
  */
 export function setFrame(out, o, px, py, pz, xx, xy, xz, yx, yy, yz, zx, zy, zz) {
     out[o] = xx; out[o + 1] = xy; out[o + 2] = xz; out[o + 3] = 0;

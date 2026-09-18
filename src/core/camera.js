@@ -8,6 +8,7 @@
  *
  * Open snow field, so there is no obstacle collision solve — only the ground
  * itself pushes the arm up, which buys a rig that never pops through a drift.
+ * @module core/camera
  */
 
 import { Vector3, Matrix, Quaternion } from "@babylonjs/core/Maths/math.vector";
@@ -31,6 +32,7 @@ const PITCH_MAX = 1.05; // looking down
 const DIST_MIN = 2.6;
 const DIST_MAX = 11.0;
 
+/** Maintain the camera orbit and obstruction-aware arm while supplying horizontal movement basis vectors. */
 export class CameraRig {
     /**
      * @param {import("@babylonjs/core/scene").Scene} scene
@@ -111,6 +113,7 @@ export class CameraRig {
         this.update(0, target, Vector3.Zero(), 0, 0);
     }
 
+    /** Accumulate bounded camera-shake energy from impacts; the camera update decays it over time. */
     addTrauma(amount) {
         this.trauma = Math.min(1, this.trauma + amount);
     }
@@ -247,6 +250,7 @@ export class CameraRig {
         return out;
     }
 
+    /** Write the horizontal right basis into caller-owned storage for camera-relative movement. */
     getFlatRight(out) {
         out.set(Math.cos(this.yaw), 0, -Math.sin(this.yaw));
         return out;
@@ -262,8 +266,13 @@ export function expDamp(cur, target, rate, dt) {
 
 /**
  * Semi-implicit damped spring toward `target`, mutating `pos` and `vel`.
- * @param {Vector3} pos @param {Vector3} vel @param {Vector3} target
+ *
+ * @param {Vector3} pos
+ * @param {Vector3} vel
+ * @param {Vector3} target
+ *
  * @param {number} freq natural frequency (rad/s-ish)
+ *
  * @param {number} damping 1 = critical
  */
 function springDamp(pos, vel, target, freq, damping, dt) {

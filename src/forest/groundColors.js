@@ -1,3 +1,8 @@
+/**
+ * Blend colour seams only; preserve geometry and the original biome data.
+ * @module forest/groundColors
+ */
+
 /** Blend colour seams only; preserve geometry and the original biome data. */
 export function smoothGroundColors(positions,colors){
     const groups=new Map(),result=new Float32Array(colors);

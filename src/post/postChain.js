@@ -47,6 +47,7 @@
  * `scene.getTransformMatrix()`, so both get the same jittered matrix and line up
  * to the subpixel — which they have to, or the resolve integrates two different
  * samplings of the same surface.
+ * @module post/postChain
  */
 
 import { PostProcess } from "@babylonjs/core/PostProcesses/postProcess";
@@ -99,6 +100,7 @@ const _proj = new Matrix();
 const _sunWorld = new Vector3();
 const _sunClip = new Vector3();
 
+/** Own ordered post-processing passes and temporal history used by the main-world renderer. */
 export class PostChain {
     /**
      * @param {import("@babylonjs/core/scene").Scene} scene
@@ -443,6 +445,7 @@ export class PostChain {
         this._historyValid = 0;
     }
 
+    /** Release camera post-processes and temporal history targets when the owning system is torn down. */
     dispose() {
         for (let i = 0; i < this.passes.length; i++) this.passes[i].dispose(this.camera);
         this.history[0].dispose();

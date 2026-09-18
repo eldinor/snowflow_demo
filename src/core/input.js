@@ -3,6 +3,7 @@
  * no events fired into game code, no per-frame allocation.
  *
  * Mouse look uses pointer lock, which frees the right button for snow-surf.
+ * @module core/input
  */
 
 export const input = {
@@ -36,6 +37,9 @@ export const input = {
 
 const keys = Object.create(null);
 
+/**
+ * Clear held keys and transient actions when focus, pointer lock or UI ownership changes, preventing stuck movement.
+ */
 export function resetInput() {
     for (const key in keys) keys[key] = false;
     input.moveX = input.moveZ = input.lookX = input.lookY = input.zoomDelta = input.spellPressed = 0;
@@ -186,6 +190,9 @@ export function endFrame() {
     input.flyPressed = false;
 }
 
+/**
+ * Query a physical keyboard code from the shared held-key set without consuming it.
+ */
 export function isDown(code) {
     return !!keys[code];
 }

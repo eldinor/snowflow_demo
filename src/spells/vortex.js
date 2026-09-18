@@ -23,6 +23,7 @@
  *                   how the spray swirls without the particle simulation needing
  *                   to know what a vortex is — the same trick the surf plume uses
  *                   to leave the crest the mesh is actually drawing.
+ * @module spells/vortex
  */
 
 import { PROFILE_TUBE } from "./waterBody.js";
@@ -43,6 +44,7 @@ const TURNS = 1.35;
 
 const _rgt = new Float32Array(3);
 
+/** Coordinate helical water strands, lifted particles and surface removal around the avatar. */
 export class Vortex {
     /** @param {import("./spellSystem.js").SpellContext} ctx */
     constructor(ctx) {
@@ -61,6 +63,7 @@ export class Vortex {
         this.ring = 0.9;
     }
 
+    /** Acquire available shared-water strands and restart the stripping/particle envelopes around the avatar. */
     trigger() {
         const ctx = this.ctx;
         for (let i = 0; i < HELICES; i++) {
@@ -73,7 +76,10 @@ export class Vortex {
         this.active = true;
     }
 
-    /** @param {number} dt */
+    /**
+     * Update helical strands, surface stripping and airborne emission from the same spell envelope.
+     * @param {number} dt - Simulation seconds.
+     */
     update(dt) {
         if (!this.active) return;
         const ctx = this.ctx;
@@ -305,6 +311,7 @@ export class Vortex {
         }
     }
 
+    /** Stop the active spell sequence through its cleanup path; terrain edits are not rolled back. */
     cancel() {
         this._end();
     }

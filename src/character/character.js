@@ -12,6 +12,8 @@
  * matrix uniforms, no vertex data.
  *
  * Allocation per frame: none.
+ *
+ * @module character/character
  */
 
 import { ShaderMaterial } from "@babylonjs/core/Materials/shaderMaterial";
@@ -92,6 +94,7 @@ const _droop = new Vector3();
 const _screen = new Vector2();
 const _furCol = new Color3(0.74, 0.755, 0.795);
 
+/** Own the procedural avatar meshes, materials and transform texture; movement remains in CharacterController. */
 export class Character {
     /**
      * @param {import("@babylonjs/core/scene").Scene} scene
@@ -321,6 +324,9 @@ export class Character {
         }
     }
 
+    /**
+     * Set visibility of body, cloth and fur together through the character's visibility flag.
+     */
     setVisible(v) {
         this._visible = !!v;
         this.bodyMesh.isVisible = this._visible;
@@ -345,6 +351,10 @@ export class Character {
         this.update(0);
     }
 
+    /**
+     * Pose the figure and advance garment simulation before uploading their shared transform texture.
+     * @param {number} dt - Simulation seconds.
+     */
     update(dt) {
         const ch = this.controller;
         this.figure.update(dt, ch);
@@ -396,6 +406,9 @@ export class Character {
         }
     }
 
+    /**
+     * Pack skin matrices and cloth nodes into the shared float texture so all character render passes consume the same pose.
+     */
     _uploadTransforms() {
         const d = this._texData;
         const skin = this.figure.skin;
@@ -515,6 +528,7 @@ export class Character {
         }
     }
 
+    /** Release avatar meshes, materials and the pose/cloth texture when the owning system is torn down. */
     dispose() {
         this.bodyMesh.dispose();
         this.clothMesh.dispose();

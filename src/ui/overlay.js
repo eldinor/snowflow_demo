@@ -6,6 +6,7 @@
  * strings 90 times a second is steady garbage for no benefit. The frame graph
  * redraws at 20 Hz — fast enough to watch a hitch appear, cheap enough to
  * ignore.
+ * @module ui/overlay
  */
 
 import { S, SCHEMA, set, applyPreset } from "../core/settings.js";
@@ -94,6 +95,7 @@ const CSS = `
   user-select: text; cursor: text; }
 `;
 
+/** Bind developer controls and performance diagnostics to shared settings and camera state. */
 export class Overlay {
     /**
      * @param {{ rig?: import("../core/camera.js").CameraRig,
@@ -324,6 +326,7 @@ export class Overlay {
         for (let i = 0; i < this.widgets.length; i++) this.widgets[i].sync();
     }
 
+    /** Switch the developer overlay visibility while keeping its controls and state available. */
     toggle() {
         this.visible = !this.visible;
         this.el.classList.toggle("show", this.visible);
@@ -467,6 +470,7 @@ export class Overlay {
         }
     }
 
+    /** Reset performance hitch statistics through the overlay action. */
     resetSpikes() {
         resetSpikes();
     }

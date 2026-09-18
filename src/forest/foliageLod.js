@@ -1,3 +1,8 @@
+/**
+ * Keep complete disconnected leaf/grass cards, preserving their original UVs.
+ * @module forest/foliageLod
+ */
+
 import { retained } from './chunks.js';
 
 /** Keep complete disconnected leaf/grass cards, preserving their original UVs. */

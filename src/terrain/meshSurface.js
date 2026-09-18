@@ -1,5 +1,13 @@
+/**
+ * Indexed vertical surface queries against the actual imported terrain triangles.
+ * @module terrain/meshSurface
+ */
+
 /** Indexed vertical surface queries against the actual imported terrain triangles. */
 export class MeshSurface {
+    /**
+     * Index triangle offsets by X/Z cell to avoid scanning the entire terrain for every foot or camera query. Arrays are retained by reference.
+     */
     constructor(positions, indices, cellSize = 16, colors = null) {
         this.colors = colors;
         this.positions = positions;
@@ -33,6 +41,15 @@ export class MeshSurface {
     _col(x) { return Math.max(0, Math.min(this.cols - 1, Math.floor((x - this.minX) / this.cellSize))); }
     _row(z) { return Math.max(0, Math.min(this.rows - 1, Math.floor((z - this.minZ) / this.cellSize))); }
 
+    /**
+     * Return the uppermost triangle height at clamped world X/Z coordinates. Interpolate optional colour and write the geometric normal without changing source data.
+     * @param {number} x - World X in metres.
+     * @param {number} z - World Z in metres.
+     * @param normal - Optional mutable vector receiving the upward plane normal.
+     * @param color - Optional RGB output array receiving barycentrically interpolated colour.
+     * @returns {number} Height in metres.
+     * @throws If no source triangle covers the clamped point; do not silently invent ground.
+     */
     sample(x, z, normal, color) {
         // Camera arms and spell probes may extend beyond the playable boundary.
         x = Math.max(this.minX, Math.min(this.maxX, x));
@@ -72,6 +89,9 @@ export class MeshSurface {
         return height;
     }
 
+    /**
+     * Clamp position X/Z in place to the indexed terrain bounds; preserve its Y coordinate.
+     */
     clampToPlayArea(position) {
         position.x = Math.max(this.minX + 1, Math.min(this.maxX - 1, position.x));
         position.z = Math.max(this.minZ + 1, Math.min(this.maxZ - 1, position.z));

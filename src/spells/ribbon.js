@@ -17,6 +17,7 @@
  * doubles back on itself, and a tip driven only by the aim draws a straight
  * line. A slow Lissajous in the camera's own right/up plane means the pattern
  * is always broadside to the viewer however the player is standing.
+ * @module spells/ribbon
  */
 
 import { PROFILE_TUBE, STRAND_COLS } from "./waterBody.js";
@@ -71,6 +72,7 @@ const SECTION_ASPECT = 1.55;
 const _tan = new Float32Array(3);
 const _rgt = new Float32Array(3);
 
+/** Record the driven water tip over time so the stream trails motion rather than instantly following aim. */
 export class Ribbon {
     /** @param {import("./spellSystem.js").SpellContext} ctx */
     constructor(ctx) {
@@ -200,7 +202,10 @@ export class Ribbon {
         this._seeded = true;
     }
 
-    /** @param {number} dt */
+    /**
+     * Advance the driven tip, retained trail and retiring tail, then write the shared water strand.
+     * @param {number} dt - Simulation seconds.
+     */
     update(dt) {
         if (!this.active) return;
         const ctx = this.ctx;
@@ -732,6 +737,7 @@ export class Ribbon {
         }
     }
 
+    /** Stop the active spell sequence through its cleanup path; terrain edits are not rolled back. */
     cancel() {
         // Not `release()`: cancelling is the settings toggle or a lost pointer
         // lock, and neither of those is the player throwing anything.

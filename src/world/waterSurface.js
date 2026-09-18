@@ -1,3 +1,8 @@
+/**
+ * Sparse triangle lookup: swimming uses exactly the visible lake footprint.
+ * @module world/waterSurface
+ */
+
 /** Sparse triangle lookup: swimming uses exactly the visible lake footprint. */
 export class WaterSurface {
     constructor(data,level,cellSize=16) {
@@ -11,6 +16,9 @@ export class WaterSurface {
                 }
         }
     }
+    /**
+     * Return lake level and interpolated depth only inside a rendered lake triangle. Return null on dry islands, holes or outside coverage.
+     */
     sample(x,z) {
         const {positions:p,indices:ix,colors:c}=this.data;
         for(const i of this.cells.get(`${Math.floor(x/this.cellSize)},${Math.floor(z/this.cellSize)}`)||[]) {

@@ -24,6 +24,7 @@
  * same upload.
  *
  * Allocation per frame: none.
+ * @module vfx/surfWake
  */
 
 import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData";
@@ -79,6 +80,7 @@ const WAKE_CASCADES = 2;
 const _splits = new Vector4();
 const _fwd = new Vector3();
 
+/** Build the moving surf plume from travelled positions and surface contact, with matching depth/shadow passes. */
 export class SurfWake {
     /**
      * @param {import("@babylonjs/core/scene").Scene} scene
@@ -261,12 +263,14 @@ export class SurfWake {
         depth.registerCaster(this.mesh, mat);
     }
 
+    /** Forget the travelled spine and pending plume emission so a teleport cannot bridge unrelated locations. */
     reset() {
         this._head = this._count = this._odo = this._plumeOwed = this._driftOwed = 0;
         this._active = false;
         this.mesh.isVisible = false;
     }
 
+    /** Gate wake rendering and hide the mesh immediately when disabled. */
     setEnabled(v) {
         this._enabled = !!v;
         if (!this._enabled) this.mesh.isVisible = false;
@@ -708,6 +712,7 @@ export class SurfWake {
         }
     }
 
+    /** Release wake geometry, materials and packed data texture when the owning system is torn down. */
     dispose() {
         this.mesh.dispose();
         this.material.dispose();

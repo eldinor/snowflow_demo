@@ -17,6 +17,7 @@
  * aerial perspective has already compressed contrast to the point that no
  * shadow in it is legible — it would be four milliseconds of shadow map nobody
  * can see.
+ * @module render/shadows
  */
 
 import { Vector3, Vector4, Matrix } from "@babylonjs/core/Maths/math.vector";
@@ -52,6 +53,7 @@ const NDC = [
     [-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1],
 ];
 
+/** Own cascaded sun-shadow targets and their camera-relative, stabilized light-space fits. */
 export class ShadowSystem {
     /**
      * @param {import("@babylonjs/core/scene").Scene} scene
@@ -126,7 +128,9 @@ export class ShadowSystem {
 
     /**
      * Tell the cascade fitter how tall the world actually is.
-     * @param {number} min @param {number} max metres
+     *
+     * @param {number} min
+     * @param {number} max metres
      */
     setHeightBounds(min, max) {
         this.minHeight = min;
@@ -201,6 +205,9 @@ export class ShadowSystem {
         }
     }
 
+    /**
+     * Fit one camera slice in light space; keep the shadow sampling footprint stable rather than letting small camera changes alter texel placement.
+     */
     _fitCascade(c, sliceNear, sliceFar, camNear, camFar) {
         // Frustum slice corners, by unprojecting the NDC cube and re-cutting it
         // at the slice distances along each edge.
@@ -354,6 +361,7 @@ export class ShadowSystem {
         }
     }
 
+    /** Release cascade targets and registered shadow materials when the owning system is torn down. */
     dispose() {
         for (const m of this.maps) m.dispose();
         for (const m of this.materials) m.dispose();

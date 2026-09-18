@@ -10,6 +10,7 @@
  * an equirectangular LUT once, and again only when the sun actually moves.
  * Everything downstream — skybox, ambient SH, specular reflections, aerial
  * inscatter — reads that one texture.
+ * @module render/sky
  */
 
 import { Vector2, Vector3, Color3 } from "@babylonjs/core/Maths/math";
@@ -40,6 +41,7 @@ function clamp(v, lo, hi) {
     return v < lo ? lo : v > hi ? hi : v;
 }
 
+/** Bake atmospheric lookup data and ambient lighting shared by world materials. */
 export class Sky {
     /** @param {import("@babylonjs/core/scene").Scene} scene */
     constructor(scene) {
@@ -274,6 +276,9 @@ export class Sky {
         return out;
     }
 
+    /**
+     * Regenerate sky lookup and lighting data from current sun settings; materials reuse these shared results instead of integrating atmosphere themselves.
+     */
     bake() {
         for (const t of [this.lut, this.shLut]) {
             t.setVector3("sunDir", this.sunDir);
@@ -371,6 +376,7 @@ export class Sky {
         m.setFloat("aerialStrength", S.aerialStrength);
     }
 
+    /** Release sky lookup textures, mesh and material when the owning system is torn down. */
     dispose() {
         this.lut.dispose();
         this.shLut.dispose();

@@ -1,7 +1,15 @@
+/**
+ * Static vertical cylinders, independent of render visibility and LOD selection.
+ * @module world/propCollisions
+ */
+
 const SKIN = 0.002;
 export const AVATAR_RADIUS = 0.32;
 export const AVATAR_HEIGHT = 1.8;
 
+/**
+ * Classify only recognized solid desert materials. Unrecognized vegetation remains passable rather than receiving foliage-sized collision bounds.
+ */
 export function solidPropKind(material) {
     if (/quiver|SaguaroSkin/.test(material)) return 'trunk';
     if (/boulder|drone_rock|namaqualand_rocks/.test(material)) return 'rock';
@@ -11,6 +19,9 @@ export function solidPropKind(material) {
 /** Static vertical cylinders, independent of render visibility and LOD selection. */
 export class PropCollisions {
     constructor(cellSize = 16) { this.cellSize = cellSize; this.cells = new Map(); this.colliders = []; }
+    /**
+     * Index a positive-radius vertical cylinder into every overlapping grid cell. The collider object is retained, so height adjustments remain visible to queries.
+     */
     add(c) {
         if (!(c.radius > 0) || c.maxY <= c.minY) return;
         this.colliders.push(c);
@@ -23,6 +34,9 @@ export class PropCollisions {
             }
         }
     }
+    /**
+     * Collect unique candidate cylinders along the expanded X/Z sweep. This broad phase does not itself test vertical overlap or contact.
+     */
     query(x0,z0,x1,z1,radius) {
         const result = new Set(), s = this.cellSize;
         for (let z=Math.floor((Math.min(z0,z1)-radius)/s); z<=Math.floor((Math.max(z0,z1)+radius)/s); z++) {
@@ -90,6 +104,9 @@ export class PropCollisions {
             velocity.x-=speedInto*nx; velocity.z-=speedInto*nz;
         }
     }
+    /**
+     * Find the highest eligible cylinder top below the avatar footprint for landing/support; return -Infinity when none qualifies.
+     */
     supportHeight(position, radius=AVATAR_RADIUS) {
         let top = -Infinity;
         for (const c of this.query(position.x,position.z,position.x,position.z,radius)) {
@@ -107,6 +124,9 @@ export class PropCollisions {
         }
         return result;
     }
+    /**
+     * Return the clear fraction of a camera-arm sweep against cylinders, including vertical entry. A value of one leaves the arm unshortened.
+     */
     cameraFraction(start,end,radius=.25) {
         let fraction=1;
         for (const c of this.query(start.x,start.z,end.x,end.z,radius)) {

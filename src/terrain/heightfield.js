@@ -15,6 +15,7 @@
  * noise in JavaScript would mean f32 GPU maths against f64 JS maths — the two
  * would disagree by centimetres and the character would visibly float or sink.
  * Reading back the exact bake makes disagreement structurally impossible.
+ * @module terrain/heightfield
  */
 
 import { ProceduralTexture } from "@babylonjs/core/Materials/Textures/Procedurals/proceduralTexture";
@@ -31,6 +32,7 @@ export const AUX_RES = 2048;
 /** Half-extent the player is kept inside, leaving margin for the far rings. */
 export const PLAY_RADIUS = 620;
 
+/** Bake procedural macro terrain and expose cached CPU samples for movement and camera grounding. */
 export class Heightfield {
     /** @param {import("@babylonjs/core/scene").Scene} scene */
     constructor(scene) {
@@ -164,7 +166,9 @@ export class Heightfield {
      * Bicubic B-spline height lookup, matching the vertex shader's
      * reconstruction so the ground the character stands on is the ground that
      * is drawn.
-     * @param {number} x @param {number} z
+     *
+     * @param {number} x
+     * @param {number} z
      */
     heightAt(x, z) {
         const h = this.heightCPU;
@@ -201,7 +205,10 @@ export class Heightfield {
 
     /**
      * Surface normal from the same reconstruction, by central difference.
-     * @param {number} x @param {number} z @param {Vector3} out
+     *
+     * @param {number} x
+     * @param {number} z
+     * @param {Vector3} out
      */
     normalAt(x, z, out) {
         const e = this.cpuTexel || 1;
@@ -223,6 +230,7 @@ export class Heightfield {
         }
     }
 
+    /** Release procedural heightfield resources when the owning system is torn down. */
     dispose() {
         this.heightTex.dispose();
         this.auxTex.dispose();

@@ -1,3 +1,8 @@
+/**
+ * September 9 visual terrain; also the user-authorised grounding surface.
+ * @module terrain/exaltedWorld
+ */
+
 import { LoadAssetContainerAsync } from "@babylonjs/core/Loading/sceneLoader";
 import "@babylonjs/loaders/glTF";
 import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData";
@@ -27,6 +32,9 @@ export class ExaltedWorld {
         this.auxTex = this.heightTex;
     }
 
+    /**
+     * Bake the loader's handedness transform into the target once, retain CPU triangle data and derive the soft-surface mask. Dispose the temporary asset container after extraction.
+     */
     async loadInto(target) {
         const url = `${import.meta.env.BASE_URL}assets/exalted/alpha-map.glb`;
         const container = await LoadAssetContainerAsync(url, this.scene);
@@ -63,12 +71,25 @@ export class ExaltedWorld {
         }
     }
 
+    /**
+     * Return imported triangle height in world metres; this does not include the local GPU deformation offset.
+     */
     heightAt(x, z) { return this.surface.sample(x, z); }
+    /**
+     * Return reusable [snow, sand] weights from the actual triangle colour. Copy the result if it must survive another call.
+     */
     weightsAt(x, z) {
         this.surface.sample(x, z, null, this._color);
         return surfaceWeights(this._color, this._weights);
     }
+    /**
+     * Write the authored triangle-plane normal into out; avoids allocating a vector per grounding query.
+     */
     normalAt(x, z, out) { this.surface.sample(x, z, out); return out; }
+    /**
+     * Clamp the mutable world position to the imported terrain's playable X/Z bounds.
+     */
     clampToPlayArea(position) { this.surface.clampToPlayArea(position); }
+    /** Release sampling textures and the CPU surface reference when the owning system is torn down. */
     dispose() { this.heightTex.dispose(); this.surfaceMap?.dispose(); this.surface = null; }
 }

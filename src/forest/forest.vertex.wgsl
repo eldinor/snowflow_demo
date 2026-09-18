@@ -1,3 +1,5 @@
+// Shared forest beauty/shadow placement. Thin-instance transforms and root-anchored wind must agree in both passes; GROUND reads authored display colours.
+
 attribute position: vec3f;
 attribute normal: vec3f;
 attribute uv: vec2f;

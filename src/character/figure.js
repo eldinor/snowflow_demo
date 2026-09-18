@@ -18,6 +18,8 @@
  *
  * Allocation: none per frame. Everything lives in flat arrays sized at
  * construction.
+ *
+ * @module character/figure
  */
 
 import { setFrameFromDir, invertRigid, mul, xformPoint } from "../core/mat4.js";
@@ -164,6 +166,7 @@ function clamp(v, lo, hi) {
     return v < lo ? lo : v > hi ? hi : v;
 }
 
+/** Solve the 18-bone procedural pose and planted feet; publish flat matrix arrays directly usable by GPU skinning. */
 export class Figure {
     /**
      * @param {{heightAt(x:number,z:number):number, normalAt(x:number,z:number,out:any):any}} terrain
@@ -369,6 +372,9 @@ export class Figure {
         return Math.max(this.terrain.heightAt(x,z), support);
     }
 
+    /**
+     * Advance distance-driven stance/swing transitions and retain planted world positions, so IK follows the body without foot sliding.
+     */
     _updateFeet(h, ch) {
         if (ch.flight.active || ch.swimming.active) {
             const rx = Math.cos(ch.facing), rz = -Math.sin(ch.facing);

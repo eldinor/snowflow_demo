@@ -6,6 +6,7 @@
  * its widgets from, and `onChange` lets systems react to edits that need work
  * (rebuilding a render target, re-freezing a material) rather than just being
  * sampled next frame.
+ * @module core/settings
  */
 
 /** @type {Record<string, number|boolean|string>} */

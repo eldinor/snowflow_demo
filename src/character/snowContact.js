@@ -18,6 +18,7 @@
  *              turn. This is the centrepiece's mark on the world.
  *
  * Zero allocation: brushes are pushed straight into the field's staging array.
+ * @module character/snowContact
  */
 
 /**
@@ -33,6 +34,7 @@ const BOOT_ELONG = 1.7;
 const SURF_WIDTH = 0.30;
 const SURF_ELONG = 2.6;
 
+/** Connect solved foot/board contact to terrain deformation and particle emission. */
 export class SnowContact {
     /**
      * @param {import("./controller.js").CharacterController} character
@@ -70,6 +72,9 @@ export class SnowContact {
         this._prevZ = this.character.position.z;
     }
 
+    /**
+     * Turn solved foot contacts and surfing motion into deformation brushes and spray; run after the figure pose is current.
+     */
     update(dt) {
         const ch = this.character;
         if (ch.flight.active || ch.swimming.active || ch.terrain.water?.sample(ch.position.x,ch.position.z) || ch.position.y > ch.terrain.heightAt(ch.position.x,ch.position.z) + .3) { this.reset(); return; }

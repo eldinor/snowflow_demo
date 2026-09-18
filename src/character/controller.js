@@ -11,6 +11,8 @@
  *    slope-driven acceleration so dropping down a dune face feels like a gain.
  *
  * Blending between them is eased in both directions; there is no snap.
+ *
+ * @module character/controller
  */
 
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
@@ -40,6 +42,7 @@ const SURF_GRIP = 7.5;
 /** Gait: metres of travel per full stride cycle, scaled by speed. */
 const STRIDE_BASE = 1.55;
 
+/** Own movement and mode transitions; expose derived state for the figure, cloth and effects. */
 export class CharacterController {
     /**
      * @param {{ heightAt(x:number,z:number):number, normalAt(x:number,z:number,out:Vector3):Vector3 }} terrain
@@ -124,6 +127,11 @@ export class CharacterController {
         this.terrain.normalAt(x, z, this.groundNormal);
     }
 
+    /**
+     * Consume camera-relative input and dispatch movement modes before deriving the pose state used by animation and effects.
+     * @param {number} dt - Frame duration in seconds.
+     * @param rig - Camera rig supplying movement basis vectors.
+     */
     update(dt, rig) {
         const h = Math.min(dt, 1 / 30);
 

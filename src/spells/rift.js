@@ -6,6 +6,7 @@
  * no mesh: the visible result is real terrain displacement, plus the shared
  * spray and light pools. Marks are laid per metre travelled, so propagation is
  * independent of frame rate and remains continuous through a hitch.
+ * @module spells/rift
  */
 
 import { clamp01, smooth01 } from "./bending.js";
@@ -16,6 +17,7 @@ const SPEED0 = 22.0;
 const SPEED1 = 9.0;
 const FADE = 0.55;
 
+/** Propagate a distance-sampled fracture through deformation and shared effects without owning a mesh. */
 export class Rift {
     /** @param {import("./spellSystem.js").SpellContext} ctx */
     constructor(ctx) {
@@ -33,7 +35,10 @@ export class Rift {
         this._headZ = 0;
     }
 
-    /** @param {number} ax @param {number} az flat aim direction */
+    /**
+     * @param {number} ax
+     * @param {number} az flat aim direction
+     */
     trigger(ax, az) {
         const ch = this.ctx.controller;
         const n = Math.hypot(ax, az) || 1;
@@ -51,7 +56,10 @@ export class Rift {
         this.ctx.rig.addTrauma(0.16);
     }
 
-    /** @param {number} dt */
+    /**
+     * Advance the fracture and emit distance-spaced marks so frame rate does not change track continuity.
+     * @param {number} dt - Simulation seconds.
+     */
     update(dt) {
         if (!this.active) return;
         this.t += dt;
@@ -157,6 +165,7 @@ export class Rift {
         }
     }
 
+    /** Stop the active spell sequence through its cleanup path; terrain edits are not rolled back. */
     cancel() {
         this.active = false;
     }

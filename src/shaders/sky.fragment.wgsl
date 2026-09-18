@@ -1,3 +1,5 @@
+// Sample the shared atmospheric sky lookup and add view-dependent sky detail without re-integrating the atmosphere per pixel.
+
 #include<snowNoise>
 #include<snowAtmosphere>
 #include<snowShading>

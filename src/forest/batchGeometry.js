@@ -1,3 +1,8 @@
+/**
+ * Each thin-instance batch needs its own attribute bindings, not shared Geometry.
+ * @module forest/batchGeometry
+ */
+
 import { Geometry } from '@babylonjs/core/Meshes/geometry.js';
 import { VertexBuffer } from '@babylonjs/core/Buffers/buffer.js';
 

@@ -1,3 +1,8 @@
+/**
+ * Bake the hierarchy, apply the requested scale, and ground the display's base.
+ * @module world/spawnDisplay
+ */
+
 import { LoadAssetContainerAsync } from '@babylonjs/core/Loading/sceneLoader';
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { VertexData } from '@babylonjs/core/Meshes/mesh.vertexData';

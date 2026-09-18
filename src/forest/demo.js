@@ -1,3 +1,8 @@
+/**
+ * Standalone forest controls, camera and measurements; reusable rendering stays in ForestSystem.
+ * @module forest/demo
+ */
+
 import { WebGPUEngine } from '@babylonjs/core/Engines/webgpuEngine';
 import '@babylonjs/core/Engines/WebGPU/Extensions/index';
 import { Scene } from '@babylonjs/core/scene';
@@ -41,10 +46,15 @@ for(const [title,items] of controls) {
     }
     $('controls').append(group);
 }
+/** Restore a repeatable benchmark viewpoint using the terrain sampler that also supports movement. */
 function reset(){const x=-680,z=170,y=surface.sample(x,z);camera.position.set(x,y+($('fly').checked?14:1.7),z);yaw=Math.PI/2;pitch=$('fly').checked?.2:0;keys.clear();forest.force=true;samples=[];}
+/** Sort copied frame samples so percentile reporting does not reorder the live history. */
 function percentiles(values){const sorted=[...values].sort((a,b)=>a-b);return{median:sorted[Math.floor(sorted.length*.5)]||0,p95:sorted[Math.floor(sorted.length*.95)]||0,p99:sorted[Math.floor(sorted.length*.99)]||0};}
+/** Capture settings, viewport, pose and source hash for reproducible measurement comparisons. */
 function snapshot(){return{options:{...forest.options},viewport:{width:engine.getRenderWidth(),height:engine.getRenderHeight(),devicePixelRatio:devicePixelRatio},camera:camera.position.asArray(),rotation:camera.rotation.asArray(),stats:{...forest.stats},source:forest.manifest.sha256};}
+/** Lock tuning controls during timed capture while allowing camera traversal measurements. */
 function lockMeasurement(locked){document.querySelectorAll('#controls input,#reset,#fly,#record').forEach(input=>input.disabled=locked);}
+/** Load the standalone benchmark and own its inspection-camera loop; presentation frame times are not GPU timestamps. */
 async function boot(){
     if(!navigator.gpu)throw Error('This demo requires a WebGPU-capable browser.');
     engine=new WebGPUEngine(canvas,{antialias:false});await engine.initAsync();

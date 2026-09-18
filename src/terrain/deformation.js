@@ -16,6 +16,7 @@
  *
  * Allocation: none per frame. The brush staging array is sized once at
  * construction and written in place.
+ * @module terrain/deformation
  */
 
 import { ProceduralTexture } from "@babylonjs/core/Materials/Textures/Procedurals/proceduralTexture";
@@ -44,6 +45,7 @@ const MAX_BRUSHES = 96;
 /** Seconds of relaxation banked before it is worth applying. See `_relaxOwed`. */
 const RELAX_STEP = 0.4;
 
+/** Maintain the moving GPU terrain-state window and queued contact/spell brushes. */
 export class DeformationField {
     /** @param {import("@babylonjs/core/scene").Scene} scene */
     constructor(scene) {
@@ -255,6 +257,9 @@ export class DeformationField {
         this._brushDirty = false;
     }
 
+    /**
+     * Bind the authored softness mask and its world extent so simulation brushes cannot deform roads and other firm biomes.
+     */
     setSurfaceMap(texture, origin, extent) {
         this.surfaceMap = texture;
         for (const target of this._targets) {
@@ -310,6 +315,7 @@ export class DeformationField {
         this._warmed = true;
     }
 
+    /** Release deformation simulation resources when the owning system is torn down. */
     dispose() {
         this._targets[0].dispose();
         this._targets[1].dispose();

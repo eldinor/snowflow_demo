@@ -16,6 +16,7 @@
  * their independently-snapped origins drift apart. Within the overlap band the
  * inner ring's vertices are fully morphed onto the outer ring's lattice, so both
  * rings describe the identical surface there and the overlap is invisible.
+ * @module terrain/clipmapMesh
  */
 
 import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData";

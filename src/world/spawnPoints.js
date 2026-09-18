@@ -1,3 +1,8 @@
+/**
+ * Rev B destinations stay in chart coordinates until converted to the Babylon world frame.
+ * @module world/spawnPoints
+ */
+
 // Coordinates and names: Exalted Map Reference Rev B / places_register.json.
 // These are player inspection points at named places, not new Cube spawns.
 export const SPAWN_POINTS = Object.freeze([

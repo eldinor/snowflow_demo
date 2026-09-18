@@ -5,6 +5,7 @@
  * sheet strand gives the moving front a coherent silhouette; the shared
  * deformation field carries the compacted track and edge berms, while the
  * shared spray pool supplies both a low powder curtain and ballistic clods.
+ * @module spells/avalanche
  */
 
 import { PROFILE_SHEET } from "./waterBody.js";
@@ -14,6 +15,7 @@ const COLS = 56;
 const LIFE = 3.15;
 const MAX_REACH = 28;
 
+/** Drive a terrain-following water sheet, persistent track and spray from one moving front. */
 export class Avalanche {
     /** @param {import("./spellSystem.js").SpellContext} ctx */
     constructor(ctx) {
@@ -32,7 +34,10 @@ export class Avalanche {
         this._seed = 0;
     }
 
-    /** @param {number} ax @param {number} az flat aim */
+    /**
+     * @param {number} ax
+     * @param {number} az flat aim
+     */
     trigger(ax, az) {
         if (this.strand < 0) this.strand = this.ctx.water.acquire();
         if (this.strand < 0) return;
@@ -53,7 +58,10 @@ export class Avalanche {
         this.ctx.rig.addTrauma(0.20);
     }
 
-    /** @param {number} dt */
+    /**
+     * Advance the terrain-following front and sample its track/spray by travelled distance.
+     * @param {number} dt - Simulation seconds.
+     */
     update(dt) {
         if (!this.active) return;
         this.t += dt;
@@ -192,6 +200,7 @@ export class Avalanche {
         }
     }
 
+    /** Stop the active spell sequence through its cleanup path; terrain edits are not rolled back. */
     cancel() {
         this._end();
     }

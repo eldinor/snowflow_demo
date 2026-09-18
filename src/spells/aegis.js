@@ -5,6 +5,7 @@
  * Release leaves the built portion standing; pressing 7 again shatters only
  * this wall back into the shared spray pool. The crystal field supplies the
  * geometry, shadows, refraction and prepass, so Aegis adds no draw call.
+ * @module spells/aegis
  */
 
 import { clamp01, smooth01 } from "./bending.js";
@@ -13,6 +14,7 @@ const MAX = 29;
 const BUILD_TIME = 1.75;
 const HALF_WIDTH = 4.25;
 
+/** Grow and release an ice wall through the shared crystal pool rather than allocating a separate wall renderer. */
 export class Aegis {
     /** @param {import("./spellSystem.js").SpellContext} ctx */
     constructor(ctx) {
@@ -39,6 +41,7 @@ export class Aegis {
         this._frostOwed = 0;
     }
 
+    /** Start an aimed wall at world X/Z, or shatter the existing wall when triggered again. */
     trigger(x, z, fx, fz) {
         if (this.hasWall) {
             this.shatter();
@@ -62,12 +65,16 @@ export class Aegis {
         this.ctx.rig.addTrauma(0.10);
     }
 
+    /** Stop growth on release while leaving already-created ice standing in the shared crystal pool. */
     setHeld(held) {
         this.held = held && this.hasWall;
         if (!held && this.active) this.active = false;
     }
 
-    /** @param {number} dt */
+    /**
+     * Grow the requested wall teeth and frost envelope while held; existing teeth remain after release.
+     * @param {number} dt - Simulation seconds.
+     */
     update(dt) {
         if (!this.active) return;
         this.t += dt;
@@ -144,6 +151,7 @@ export class Aegis {
         }
     }
 
+    /** Retire this wall's crystal handles and emit fragments through the shared spray pool. */
     shatter() {
         if (!this.hasWall) return;
         const sp = this.ctx.spray;
@@ -172,6 +180,7 @@ export class Aegis {
         this._handles.fill(-1);
     }
 
+    /** Stop the active spell sequence through its cleanup path; terrain edits are not rolled back. */
     cancel() {
         if (this.hasWall) this.shatter();
         this.active = false;

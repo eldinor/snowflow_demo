@@ -17,6 +17,7 @@
  *
  * Allocation: none per frame. Everything is a typed array sized at construction,
  * and dead particles are recycled through a free ring rather than compacted.
+ * @module vfx/particles
  */
 
 import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData";
@@ -57,6 +58,7 @@ const _right = new Vector3();
 const _up = new Vector3();
 const _splits = new Vector4();
 
+/** Recycle a fixed particle pool for terrain, spell and water effects without per-emitter meshes. */
 export class SprayField {
     /**
      * @param {import("@babylonjs/core/scene").Scene} scene
@@ -115,6 +117,7 @@ export class SprayField {
         this._t = 0;
     }
 
+    /** Clear live particles and hide the shared mesh after a teleport without reallocating the pool. */
     reset() {
         this.life.fill(0);
         this.liveCount = this._next = 0;
@@ -159,11 +162,21 @@ export class SprayField {
     /**
      * Emit one grain. Everything is world space.
      *
-     * @param {number} x @param {number} y @param {number} z
-     * @param {number} vx @param {number} vy @param {number} vz
+     *
+     * @param {number} x
+     * @param {number} y
+     * @param {number} z
+     *
+     * @param {number} vx
+     * @param {number} vy
+     * @param {number} vz
+     *
      * @param {number} size metres, radius
+     *
      * @param {number} life seconds
+     *
      * @param {number} kind 0 powder, 1 clod, 4 water droplet, 5 water mist
+     *
      * @param {number} [drag] 1/s. Defaults to the fall-in-place value for a
      *   grain of settling powder; pass something near 1 for anything thrown.
      */
@@ -306,10 +319,12 @@ export class SprayField {
         m.setFloat("ambientIntensity", S.ambientIntensity);
     }
 
+    /** Wait for the shared particle material pipeline before interactive emission starts. */
     async warmUp() {
         await whenReady(this.material, "spray material", [this.mesh, false]);
     }
 
+    /** Release the particle mesh, material and packed data texture when the owning system is torn down. */
     dispose() {
         this.mesh.dispose();
         this.material.dispose();

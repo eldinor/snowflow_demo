@@ -3,6 +3,8 @@
  *
  * WebGPU only, by design. No WebGL path, no feature-detect branches: if the
  * adapter isn't there we say so once and stop.
+ *
+ * @module main
  */
 
 import { WebGPUEngine } from "@babylonjs/core/Engines/webgpuEngine";
@@ -47,6 +49,7 @@ import * as loading from "./core/loading.js";
 // ------------------------------------------------------- module-scope scratch
 const _vel = new Vector3();
 
+/** Initialize world systems in dependency order, warm pipelines and start the ordered simulation/render loop. */
 async function boot() {
     const exalted = new URLSearchParams(location.search).get("terrain") !== "procedural";
     if (exalted) {

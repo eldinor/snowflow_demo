@@ -1,3 +1,5 @@
+// Shade persistent lake and river surfaces using flow, ripples, sky and atmosphere; the depth variant supplies matching world depth.
+
 varying vWorld: vec3f;
 varying vNormal: vec3f;
 varying vData: vec4f;

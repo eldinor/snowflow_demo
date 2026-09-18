@@ -1,3 +1,8 @@
+/**
+ * Flight ribbon animation and timer UI consume movement state without owning flight logic.
+ * @module vfx/flightWind
+ */
+
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { VertexData } from '@babylonjs/core/Meshes/mesh.vertexData';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
@@ -9,6 +14,7 @@ const WIND_READY = new Color3(.72, .9, 1);
 const WIND_WARNING = new Color3(1, .55, .08);
 const WIND_END = new Color3(1, .035, .015);
 
+/** Render flight-state feedback through ribbons, particles and the timer indicator. */
 export class FlightWind {
     constructor(scene, character, spray) {
         this.character = character;
@@ -50,6 +56,10 @@ export class FlightWind {
         scene.onDisposeObservable.addOnce(()=>this.dispose());
         if(import.meta.hot) import.meta.hot.dispose(()=>this.dispose());
     }
+    /**
+     * Animate wind ribbons and time-to-expiry colours from flight state; emit particles without modifying the flight controller.
+     * @param {number} dt - Simulation seconds.
+     */
     update(dt) {
         const ch=this.character, f=ch.flight;
         this.time+=dt;
@@ -77,6 +87,7 @@ export class FlightWind {
         if(this.tip.textContent!==tip)this.tip.textContent=tip;
         this.bar.value=f.active ? f.remaining/FLIGHT_DURATION : 1-f.cooldown/FLIGHT_COOLDOWN;
     }
+    /** Release flight feedback resources when the owning system is torn down. */
     dispose() {
         this.hud.remove();
         this.ribbons.forEach(m=>m.dispose()); this.material.dispose();

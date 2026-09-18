@@ -1,3 +1,5 @@
+// Forest benchmark lighting, cutout alpha and manual shadow comparison. IMPOSTOR samples already-lit tree cards; output is display-encoded without the main HDR chain.
+
 varying vWorld: vec3f;
 varying vNormal: vec3f;
 varying vUV: vec2f;

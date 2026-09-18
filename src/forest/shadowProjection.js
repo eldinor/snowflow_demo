@@ -1,3 +1,8 @@
+/**
+ * Align the orthographic light volume with a fixed world-space texel grid.
+ * @module forest/shadowProjection
+ */
+
 import { Vector3 } from '@babylonjs/core/Maths/math.vector.js';
 
 export const SHADOW_RESOLUTION=1024;

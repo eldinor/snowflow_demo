@@ -1,3 +1,5 @@
+// Reuse the authored desert ground projection and colour for effects so dust and displaced soil follow texture selection.
+
 uniform useDesertTextures: f32;
 uniform desertU: vec3f;
 uniform desertV: vec3f;

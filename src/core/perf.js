@@ -8,6 +8,7 @@
  * Allocation policy: every buffer is created once at module load. `sample()`
  * runs per frame and allocates nothing; `recompute()` sorts an in-place typed
  * array copy and is throttled to 4 Hz.
+ * @module core/perf
  */
 
 const CAP = 512; // ~5.7 s of history at 90 fps
@@ -84,12 +85,15 @@ function recompute() {
 
 /**
  * Count draws by wrapping the engine's two draw entry points rather than reading
- * `engine._drawCalls`, which counts something other than draws and does not
- * reset on the frame boundary. The count is latched at the end of each frame so
+ * `engine._drawCalls`, which requires explicit frame resets or instrumentation
+ * to avoid accumulating across frames. The count is latched at the end of each frame so
  * the overlay reads a whole frame rather than a partial one.
  */
 let drawAccum = 0;
 
+/**
+ * Wrap the engine's indexed and non-indexed draw entry points once. endFrameDraws latches a complete frame rather than an accumulating engine counter.
+ */
 export function installDrawCounter(engine) {
     const elements = engine.drawElementsType.bind(engine);
     const arrays = engine.drawArraysType.bind(engine);
@@ -117,11 +121,17 @@ export function mark(name, ms) {
 /** Number of frames exceeding `median + 4 ms`. */
 export const spikes = { count: 0, sinceReset: 0 };
 
+/**
+ * Count frames exceeding the current median by four milliseconds; ignore the uninitialized median.
+ */
 export function checkSpike(ms) {
     spikes.sinceReset++;
     if (stats.median > 0 && ms > stats.median + 4) spikes.count++;
 }
 
+/**
+ * Reset hitch counts independently of the rolling frame-time history.
+ */
 export function resetSpikes() {
     spikes.count = 0;
     spikes.sinceReset = 0;
@@ -143,6 +153,7 @@ export class FrameGraph {
         this.maxMs = 22; // y-axis top, eased toward the observed max
     }
 
+    /** Draw the rolling frame-time history on the overlay canvas; visualization is separate from sample collection. */
     draw() {
         const ctx = this.ctx;
         const w = this.w;

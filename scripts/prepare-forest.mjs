@@ -1,3 +1,8 @@
+/**
+ * Extract prototype nodes and stride-11 placement records from the authored forest GLB. Keep binary geometry/textures unchanged and record the source hash for reproducibility. Run from the repository root; generated assets go to public/assets/forest-demo.
+ * @module scripts/prepare-forest
+ */
+
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 const source='public/assets/exalted/forest_previz.glb';

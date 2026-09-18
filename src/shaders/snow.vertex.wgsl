@@ -1,3 +1,5 @@
+// Reconstruct procedural clipmap terrain and deformation before projecting; shared helpers keep the visible surface consistent with depth and shadow variants.
+
 #include<snowNoise>
 #include<snowTerrain>
 #include<snowDeform>

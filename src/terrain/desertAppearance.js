@@ -1,3 +1,8 @@
+/**
+ * Shared ground texture bindings keep displaced sand and airborne dust consistent.
+ * @module terrain/desertAppearance
+ */
+
 import { Matrix, Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 

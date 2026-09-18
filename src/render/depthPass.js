@@ -30,6 +30,7 @@
  * three hundred. Every consumer works in units of "fraction of the distance to
  * the pixel", so that is far below anything any of them can resolve, and it
  * halves the bandwidth of a target that is written once and read a dozen times.
+ * @module render/depthPass
  */
 
 import { RenderTargetTexture } from "@babylonjs/core/Materials/Textures/renderTargetTexture";
@@ -44,6 +45,7 @@ import { whenReady } from "../core/gpuUtil.js";
  */
 export const DEPTH_FAR = 9000;
 
+/** Render world depth with matching geometry deformation for downstream screen-space effects. */
 export class DepthPass {
     /** @param {import("@babylonjs/core/scene").Scene} scene */
     constructor(scene) {
@@ -124,6 +126,7 @@ export class DepthPass {
         }
     }
 
+    /** Release the depth target and registered depth materials when the owning system is torn down. */
     dispose() {
         this.rtt.dispose();
         for (let i = 0; i < this.materials.length; i++) this.materials[i].dispose();
