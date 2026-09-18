@@ -2,6 +2,7 @@
 varying vWorld: vec3f;
 varying vNormal: vec3f;
 varying vUV: vec2f;
+varying vEmissiveUV: vec2f;
 varying vViewZ: f32;
 var baseTex: texture_2d<f32>;
 var baseTexSampler: sampler;
@@ -17,6 +18,10 @@ uniform cullDistance: f32;
 #include<snowAtmosphere>
 #include<snowSpellLights>
 var normalTex: texture_2d<f32>;
+var emissiveTex: texture_2d<f32>;
+var emissiveTexSampler: sampler;
+uniform emissiveColor: vec3f;
+uniform emissiveGamma: f32;
 var normalTexSampler: sampler;
 var roughTex: texture_2d<f32>;
 var roughTexSampler: sampler;
@@ -65,8 +70,12 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
 #ifdef PROP_PREPASS
     fragmentOutputs.color = vec4f(input.vViewZ, 0.0, 0.0, 1.0);
 #else
-    let albedo = pow(max(texel.rgb, vec3f(0.0)), vec3f(mix(1.0, 2.2, uniforms.gammaDecode))) * uniforms.baseColor.rgb;
     let V = normalize(uniforms.cameraPos - input.vWorld);
+    let L = uniforms.sunDir;
+#ifdef PROP_UNLIT
+    var color = vec3f(0.0);
+#else
+    let albedo = pow(max(texel.rgb, vec3f(0.0)), vec3f(mix(1.0, 2.2, uniforms.gammaDecode))) * uniforms.baseColor.rgb;
     var N = normalize(input.vNormal);
     if (dot(N, V) < 0.0) { N = -N; }
     let geoN = N;
@@ -76,13 +85,17 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
     let bump = textureSampleGrad(normalTex, normalTexSampler, input.vUV, du, dv).xyz * 2.0 - 1.0;
     N = normalize(N * max(bump.z, 0.1) + (T * bump.x - B * bump.y) * inv * uniforms.normalStrength);
     let rough = clamp(textureSampleGrad(roughTex, roughTexSampler, input.vUV, du, dv).g * uniforms.roughness, 0.25, 1.0);
-    let L = uniforms.sunDir; let H = normalize(L + V);
+    let H = normalize(L + V);
     let nl = max(dot(N,L), 0.0); let nv = max(dot(N,V), 0.001);
     let spec = distributionGGX(max(dot(N,H),0.0), rough) * visSmithGGXCorrelated(nv,nl,rough) * fresnelSchlick(max(dot(V,H),0.0), vec3f(0.04));
     let shadow = sunShadow(input.vWorld, geoN, distance(input.vWorld, uniforms.cameraPos), noise * 6.283185);
     var color = (albedo / PI * nl + spec * nl) * uniforms.sunRadiance * shadow;
     color += albedo / PI * shIrradiance(N, uniforms.shR) * uniforms.ambientIntensity;
     color += spellLightingSurface(input.vWorld, N, V, albedo, vec3f(0.04), rough, 0.0, uniforms.spellLightPos, uniforms.spellLightCol, uniforms.spellLightCount);
+#endif
+    let emission=textureSampleGrad(emissiveTex,emissiveTexSampler,input.vEmissiveUV,dpdx(input.vEmissiveUV),dpdy(input.vEmissiveUV)).rgb;
+    // Emission is independent of sun/shadow lighting, but still receives fog.
+    color += pow(max(emission,vec3f(0.0)),vec3f(mix(1.0,2.2,uniforms.emissiveGamma))) * uniforms.emissiveColor;
     color = applyAerial(color, uniforms.cameraPos, input.vWorld, -V, L, skyLUT, skyLUTSampler, uniforms.sunRadiance, uniforms.fogDensity, uniforms.fogHeightFalloff, uniforms.fogStart, uniforms.aerialStrength);
     fragmentOutputs.color = vec4f(color, 1.0);
 #endif

@@ -46,6 +46,8 @@
     left: 0;
     z-index: 60;
     width: 190px;
+    max-height: calc(100dvh - 48px);
+    overflow-y: auto;
     box-sizing: border-box;
     padding: 12px;
     color: #e3edf5;
@@ -59,3 +61,9 @@
 #terrain-panel label { display: flex; align-items: center; gap: 8px; min-height: 28px; font-size: 11px; cursor: pointer; white-space: nowrap; }
 #terrain-panel input { margin: 0; accent-color: #9dc7e5; cursor: pointer; }
 #terrain-panel input:focus-visible { outline: 2px solid #b7dfff; outline-offset: 3px; }
+#wind-panel { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(211,226,238,.18); }
+.wind-control { display: grid; grid-template-columns: 1fr auto; gap: 3px 6px; margin-bottom: 10px; }
+#wind-panel label { min-height: 18px; }
+#wind-panel output { align-self: center; font-size: 10px; color: #9dc7e5; font-variant-numeric: tabular-nums; }
+#wind-panel input[type=range] { grid-column: 1 / -1; width: 100%; min-width: 0; }
+.wind-control:last-child { margin-bottom: 0; }

@@ -163,7 +163,7 @@ export class SprayField {
      * @param {number} vx @param {number} vy @param {number} vz
      * @param {number} size metres, radius
      * @param {number} life seconds
-     * @param {number} kind 0 powder, 1 clod — appearance only
+     * @param {number} kind 0 powder, 1 clod, 4 water droplet, 5 water mist
      * @param {number} [drag] 1/s. Defaults to the fall-in-place value for a
      *   grain of settling powder; pass something near 1 for anything thrown.
      */
@@ -187,7 +187,7 @@ export class SprayField {
         this.life[i] = life;
         this.size[i] = size;
         this.kind[i] = kind;
-        this.sand[i] = this.terrain.exalted && this.terrain.heightfield.weightsAt(x, z)[1] > 0.5 ? 1 : 0;
+        this.sand[i] = kind<4 && this.terrain.exalted && this.terrain.heightfield.weightsAt(x, z)[1] > 0.5 ? 1 : 0;
         if (this.sand[i] > 0.5) { this.size[i] *= 0.7; this.life[i] *= 0.8; }
         this.drag[i] = drag === undefined ? (kind > 0.5 ? 1.1 : 5.2) : drag;
         this.seed[i] = (i * 0.618033 + x * 0.137 + z * 0.311) % 1;
@@ -233,7 +233,7 @@ export class SprayField {
             const vy = this.vel[o + 1];
             this.vel[o] += (wx - this.vel[o]) * Math.min(1, k * h);
             this.vel[o + 2] += (wz - this.vel[o + 2]) * Math.min(1, k * h);
-            this.vel[o + 1] = vy + (-9.81 - k * (vy + TERMINAL)) * h;
+            this.vel[o + 1] = vy + (this.kind[i]===5 ? -.6-k*vy : -9.81-k*(vy+TERMINAL)) * h;
 
             this.pos[o] += this.vel[o] * h;
             this.pos[o + 1] += this.vel[o + 1] * h;
@@ -241,7 +241,8 @@ export class SprayField {
 
             // Settle on the snow instead of falling through it. The grain does
             // not bounce — it is snow landing on snow — it just stops and fades.
-            const g = this.terrain.heightAt(this.pos[o], this.pos[o + 2]);
+            const water=this.kind[i]>=4 ? this.terrain.water?.sample(this.pos[o],this.pos[o+2]) : null;
+            const g = Math.max(this.terrain.heightAt(this.pos[o], this.pos[o + 2]),water?.level??-Infinity);
             if (this.pos[o + 1] < g) {
                 this.pos[o + 1] = g;
                 this.vel[o] *= 0.2; this.vel[o + 1] = 0; this.vel[o + 2] *= 0.2;
@@ -250,7 +251,7 @@ export class SprayField {
             }
 
             // Puffs expand as they disperse; clods do not.
-            const grow = this.kind[i] > 0.5 ? 1.0 : 1.0 + a01 * 1.3;
+            const grow = this.kind[i]===5 ? 1+a01*2 : this.kind[i] > 0.5 ? 1.0 : 1.0 + a01 * 1.3;
             // Fade in fast, out slowly.
             const alpha =
                 Math.min(1, a01 * 8) * (1 - a01) * (1 - a01);

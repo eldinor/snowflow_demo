@@ -71,8 +71,9 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
     if (r2 > 1.0) { discard; }
 
     let state = input.vState;
-    let sand = step(1.5, state.z);
-    let kind = state.z - sand * 2.0;
+    let water = step(3.5, state.z);
+    let sand = step(1.5, state.z) * (1.0-water);
+    let kind = mix(state.z - sand * 2.0, 1.0-step(4.5,state.z), water);
 
     // Break the disc's edge. A perfectly circular puff is the tell that gives
     // billboards away; a hashed radial wobble costs one noise fetch.
@@ -115,7 +116,7 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
         // Coarse mip averages stones and soil into fine airborne dust.
         soil = desertSoilColor(world.xz,6.0)*1.15;
     }
-    let albedo = mix(vec3f(0.92, 0.94, 0.98), soil, sand);
+    let albedo = mix(mix(vec3f(0.92, 0.94, 0.98), soil, sand),vec3f(.78,.91,.98),water);
     let diff = wrapDiffuse(dot(N, L), 0.75);
     var color = albedo * INV_PI * sun * diff * shadow;
 

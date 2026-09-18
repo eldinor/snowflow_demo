@@ -34,6 +34,11 @@ import { ShadowSystem } from "./render/shadows.js";
 import { Terrain } from "./terrain/terrain.js";
 import { EXALTED_SPAWN } from "./terrain/exaltedWorld.js";
 import { DesertProps } from './world/desertProps.js';
+import { FlightWind } from './vfx/flightWind.js';
+import { WorldWater } from './world/worldWater.js';
+import { WaterEffects } from './vfx/waterEffects.js';
+import { placeSpawnDisplay } from './world/spawnDisplay.js';
+import { createSurfLabel } from './world/surfLabel.js';
 import { DepthPass } from "./render/depthPass.js";
 import { PostChain } from "./post/postChain.js";
 import { whenReady } from "./core/gpuUtil.js";
@@ -152,11 +157,20 @@ async function boot() {
     await terrain.build();
     onChange("showTerrain", (v) => (terrain.mesh.isVisible = v));
     terrain.registerPrepass(depthPass);
+    const worldWater = exalted ? new WorldWater(scene, terrain, sky, depthPass) : null;
     let desertProps = null;
+    let spawnDisplay = null;
+    let curvedDisplay = null;
+    let surfLabel = null;
     if (exalted) {
         await loading.phase('loading desert vegetation and rocks', 0.50);
         desertProps = new DesertProps(scene, terrain, sky, shadows, depthPass);
         await desertProps.load();
+        spawnDisplay=await placeSpawnDisplay(scene,terrain,desertProps,shadows,depthPass);
+        curvedDisplay=await placeSpawnDisplay(scene,terrain,desertProps,shadows,depthPass,
+            {file:'curved-d1.glb',scale:2,ahead:4,right:11,rotationY:Math.PI/4,groundClearance:1.2,
+                videoFile:'surf1.mp4',videoMesh:'Cylinder',videoInvertY:true});
+        surfLabel=await createSurfLabel(scene,curvedDisplay,terrain);
     }
 
     await loading.phase("placing character", 0.62);
@@ -178,6 +192,8 @@ async function boot() {
 
     // Airborne snow: footfall kick now, the surf plume and spell spray later.
     const spray = new SprayField(scene, terrain, sky, shadows);
+    const flightWind = new FlightWind(scene, character, spray);
+    const waterEffects=worldWater ? new WaterEffects(worldWater,terrain,character,spray) : null;
 
     // Feet and the surf groove write into the terrain state buffer through here.
     const contact = new SnowContact(character, terrain.deform, figure.figure, spray);
@@ -202,7 +218,7 @@ async function boot() {
     spells.registerPrepass(depthPass);
 
     // The rig needs ground heights to keep the spring arm above the snow.
-    rig.groundAt = (x, z) => terrain.heightAt(x, z);
+    rig.groundAt = (x, z) => Math.max(terrain.heightAt(x, z),terrain.water?.sample(x,z)?.level??-Infinity);
     rig.obstacles = terrain.obstacles;
     // Initialise the camera at spawn before fitting shadows or warming TAA.
     rig.update(0, character.position, character.velocity, 0, 0);
@@ -222,6 +238,8 @@ async function boot() {
     terrain.update(rig.camera.position, character.position, 0);
     desertProps?.update(rig.camera.position, character.position, true);
     await desertProps?.warmUp();
+    worldWater?.update(0,rig.camera.position);
+    await worldWater?.warmUp();
     figure.update(0);
     figure.sync(rig.camera.position);
     await figure.warmUp();
@@ -325,6 +343,7 @@ async function boot() {
         const tSpells = performance.now();
         terrain.update(rig.camera.position, character.position, dt);
         desertProps?.update(rig.camera.position, character.position, false, dt);
+        worldWater?.update(dt,rig.camera.position);
         const tTerrain = performance.now();
         // After the shadow refit, so the figure's uniforms carry this frame's
         // cascade matrices rather than last frame's.
@@ -332,6 +351,8 @@ async function boot() {
         // Before the spray: the wake decides where its own lip is, and the
         // grains it sheds have to be in the pool before the pool is uploaded.
         wake.update(dt, rig.camera.position);
+        flightWind.update(dt);
+        waterEffects?.update(dt,rig.camera.position);
         spray.update(dt, rig.camera.position);
         const tVfx = performance.now();
 
@@ -352,7 +373,7 @@ async function boot() {
 
         endFrameDraws();
         stats.triangles =
-            (desertProps?.triangles || 0) +
+            (desertProps?.triangles || 0) + (worldWater?.triangles || 0) + (spawnDisplay?.triangles || 0) + (curvedDisplay?.triangles || 0) +
             (terrain.mesh.metadata ? terrain.mesh.metadata.triangles : 0) +
             (terrain.local?.mesh.metadata.triangles || 0) +
             (S.showCharacter ? figure.triangles : 0) +
@@ -376,6 +397,10 @@ async function boot() {
         overlay, terrain, sky, shadows, post, depthPass, spawnBar,
         S, input, perfStats: stats,
         desertProps,
+        worldWater,
+        spawnDisplay,
+        curvedDisplay,
+        surfLabel,
     };
 }
 

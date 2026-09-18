@@ -1,0 +1,32 @@
+{
+  "source": "forest_previz.glb",
+  "sha256": "def3859035d92e2fc8df5843d8ca3ed19355e140387afce847914eff55463400",
+  "stride": 11,
+  "count": 20984,
+  "models": [
+    {
+      "id": 0,
+      "name": "Plane.025",
+      "kind": "bush",
+      "count": 2549
+    },
+    {
+      "id": 1,
+      "name": "Plane.045",
+      "kind": "grass",
+      "count": 14978
+    },
+    {
+      "id": 2,
+      "name": "Plane.023",
+      "kind": "tree",
+      "count": 982
+    },
+    {
+      "id": 3,
+      "name": "Plane.036",
+      "kind": "tree",
+      "count": 2475
+    }
+  ]
+}

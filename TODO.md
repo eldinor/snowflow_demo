@@ -114,8 +114,18 @@ Validation: production build, four unit tests and five WebGPU browser tests pass
 
 ## Known limitations to retain in planning
 
+- [x] Add isolated `/forest.html` performance demo for all 20,984 forest plants: 32 m thin-instance chunks, medium foliage/wood LOD, distant tree cards, shorter grass/bush visibility, nearby shadows, trunk collisions and GPU wind. HTML tuning controls and ten-second JSON measurements; reusable renderer in `src/forest/ForestSystem.js`.
+- [ ] Compare forest performance and visuals on target devices, especially alpha overdraw, LOD transitions, card orientation, shadow quality and authored versus adjusted plant heights. Port into the main page after this review; adapt benchmark materials to world lighting and HDR output.
+
+- [x] Extract lake and Snow river surfaces from blue GLB vertex colours and Rev B region references. Lake level Y = 0, clipped banks, animated ripples, sky reflections, downhill river shading and foam. Geometry audit saved in `reports/world-water-geometry.json`; unit tests and build pass, visuals not browser-verified.
+- [x] Add automatic surface swimming, paddling, faster swimming on Shift, water landings, splashes and expanding ripples. Exact lake coverage preserves islands; camera stays above water. Unit-tested without Playwright.
+- [x] Add nearby waterfall droplets and mist from steep blue river triangles using the shared particle pool, capped at twelve sites within 75 m.
+- [ ] Inspect the rendered river and author separate free-falling waterfall sheets where needed; add underwater rendering and scene refraction.
+
+- [x] Add Space-triggered Fly: fifteen-second flight, hold Space to rise, Ctrl to descend, automatic landing and five-second cooldown, with wind ribbons and a status indicator. Verified with unit tests and production build; no Playwright run.
+
 - The supplied visual terrain has approximately 4 m spacing and 328,536 triangles. Grounding now follows that visible surface, not the unavailable finer collision/analytic surface.
-- Terrain grounding and static prop collision are separate. Props use approximate vertical cylinders with a swept avatar footprint; swimming, slope limits, rock-top grounding and dynamic rigid bodies are not implemented.
+- Terrain grounding and static prop collision are separate. Props use approximate vertical cylinders with a swept avatar footprint. Flight can land on their flat tops; detailed rock-top geometry, walking slope limits and dynamic rigid bodies are not implemented. Swimming currently supports the lake surface, with no diving.
 - The map documents a **77 m climb over roughly 31 m near E0 N2**, before Stone Gate. Importing props does not fix that road obstruction.
 - Map heights can understate sharp peaks by up to 24 m; authored region boundaries can shift by up to 44 m through domain warp. Use the visible terrain and painted biome edges when checking placement.
 - Map source edits are normally made in `alpha-map.world.json` and followed by regeneration. That source and its height-function code are not available here; no authored layout changes have been requested.

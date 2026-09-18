@@ -11,6 +11,8 @@ uniform world: mat4x4f;
 uniform viewProjection: mat4x4f;
 uniform lightViewProjection: mat4x4f;
 uniform uvMatrix: mat4x4f;
+uniform emissiveMatrix: mat4x4f;
+varying vEmissiveUV: vec2f;
 #ifdef PROP_WIND
 uniform propWind: vec4f;
 uniform windTime: f32;
@@ -58,6 +60,7 @@ fn main(input: VertexInputs) -> FragmentInputs {
     vertexOutputs.vNormal = worldNormal;
     vertexOutputs.vWorld = worldPos.xyz;
     vertexOutputs.vUV = (uniforms.uvMatrix * vec4f(vertexInputs.uv, 1.0, 0.0)).xy;
+    vertexOutputs.vEmissiveUV = (uniforms.emissiveMatrix * vec4f(vertexInputs.uv, 1.0, 0.0)).xy;
     let clip = uniforms.viewProjection * worldPos;
     vertexOutputs.vViewZ = clip.w;
 #ifdef PROP_SHADOW

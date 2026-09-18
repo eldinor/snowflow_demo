@@ -8,7 +8,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test tests/meshSurface.test.js tests/propCollisions.test.js",
+    "test": "node --test tests/meshSurface.test.js tests/propCollisions.test.js tests/flight.test.js tests/waterGeometry.test.js tests/swimming.test.js tests/forest.test.js",
+    "prepare:forest": "node scripts/prepare-forest.mjs",
     "test:browser": "playwright test"
   },
   "keywords": [

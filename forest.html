@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exalted · Forest performance</title><link rel="stylesheet" href="/src/forest/demo.css"></head>
+<body><canvas id="forest-view" tabindex="0"></canvas>
+<aside><header><a href="/">← Exalted</a><h1>Forest performance</h1><p>32 m chunks · thin instances · WebGPU</p></header>
+<p id="status" role="status">Starting…</p>
+<div class="actions"><button id="reset" disabled>Reset view</button><button id="record" disabled>Record 10 seconds</button></div>
+<label class="toggle"><input id="fly" type="checkbox" checked> Free flight</label>
+<p class="hint">Click scene to look. WASD moves, Shift speeds up. In flight: Space rises, Ctrl descends. Esc releases the mouse.</p>
+<div id="controls"></div>
+<h2>Live measurements</h2><pre id="stats">Waiting for forest…</pre>
+<p class="hint">Frame time includes CPU, GPU and presentation pacing. It is not a GPU timestamp. Keep the same view and resolution when comparing settings.</p>
+<button id="download" disabled>Download last measurement</button>
+</aside><script type="module" src="/src/forest/demo.js"></script></body></html>

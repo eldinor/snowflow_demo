@@ -377,7 +377,7 @@ export class ClothSolver {
         // Gusts, so a standing figure's robe is never dead still.
         const gust = 1 + 0.35 * Math.sin(this._t * 0.7) + 0.18 * Math.sin(this._t * 2.3 + 1.1);
         this._wind[0] = Math.sin(a) * ws * gust - ch.velocity.x;
-        this._wind[1] = 0.35 * Math.sin(this._t * 1.9);
+        this._wind[1] = 0.35 * Math.sin(this._t * 1.9) + (ch.flight.active ? 7 : 0);
         this._wind[2] = Math.cos(a) * ws * gust - ch.velocity.z;
 
         for (let s = 0; s < steps; s++) {

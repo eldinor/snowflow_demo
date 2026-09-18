@@ -72,6 +72,7 @@ export class SnowContact {
 
     update(dt) {
         const ch = this.character;
+        if (ch.flight.active || ch.swimming.active || ch.terrain.water?.sample(ch.position.x,ch.position.z) || ch.position.y > ch.terrain.heightAt(ch.position.x,ch.position.z) + .3) { this.reset(); return; }
         const f = this.field;
 
         const dx = ch.position.x - this._prevX;

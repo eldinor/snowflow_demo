@@ -2,6 +2,10 @@
 
 World website: [exaltedgaming.gg](https://exaltedgaming.gg/).
 
+The separate forest performance demo is at **[/forest.html](/forest.html)**.
+It exposes 32 m thin-instance chunks, LOD, vegetation density, shadows, wind and
+ten-second performance recordings. See [forest integration notes](src/forest/README.md).
+
 The default scene now uses Exalted's **`alpha-map.glb`** from the
 9 September 2026 world handoff, bundled at `public/assets/exalted/alpha-map.glb`.
 Its imported geometry and biome vertex colours define the world; Exalted's
@@ -84,6 +88,13 @@ distance and LOD. The camera retracts immediately with 25 cm clearance and eases
 back out. These are approximate obstacles, not mesh-exact physics: climbing onto
 rocks, step-up, movable props and branch-level collision are not implemented.
 
+Desert didelta, leipoldtia and iceplant shrubs sway in the shared wind direction,
+with anchored bases, varied gusts and tip flutter. Both geometry levels, shadows
+and depth use the same animation, fading out between 25 and 55 metres.
+In F1 settings under Atmosphere, **Bush sway** controls amplitude and **Bush wind
+speed** controls animation speed. Global wind strength also affects bushes;
+Freeze time pauses their movement. Woody shrubs, trees and cacti remain rigid.
+
 At Desert Start, the final selection contains 365 primitive instances and
 365,594 prop triangles. See `reports/desert-placement.json` for placement checks
 and `reports/terrain-with-desert-props.json` for all seven spawn measurements.
@@ -122,6 +133,8 @@ no meshes, no HDRIs and no animation data in this repository.
 | | |
 |---|---|
 | Click | capture the pointer |
+| `Space` | cast Fly; hold to rise, release to hover |
+| `Ctrl` | descend while flying |
 | `Ctrl+I` | toggle Babylon Inspector on the right (loaded on first use; version 9.18.0, matching Babylon) |
 | `W` `A` `S` `D` | move, relative to the camera |
 | Mouse | look · **Wheel** zoom |
@@ -140,6 +153,41 @@ buffer and the raw shadow map.
 ---
 
 ## What it does
+
+### Map water
+
+The Exalted lake and Snow river are separate water meshes extracted from blue
+terrain vertex colours, constrained by the Rev B lake polygon and river route.
+The lake uses water level Y = 0 from the older sandbox reference, with shoreline
+triangles clipped against the actual bed height. Islands and banks above water
+remain exposed. The river follows the supplied terrain with a small normal offset;
+steep sections receive faster downhill ripples and more foam. The surface uses
+procedural ripples, sky-LUT reflections, depth-based lake colour and aerial fog.
+Both meshes participate in the camera depth pass; animation respects Freeze time.
+There is no additional reflection render target or imported water texture.
+
+Geometry audit: `reports/world-water-geometry.json`. Deep lake water automatically
+switches the avatar to surface swimming: WASD steers at 2.4 m/s, Shift increases
+speed to 3.8 m/s, and Space launches Fly when ready. Shallows return to walking.
+The exact lake triangles define swim coverage, preserving islands and banks.
+Flight lands at water level before transitioning to swimming. Swimming animates
+paddling arms and kicking feet, with stroke ripples and entry splashes; terrain
+footprints and surfing are suppressed in water. Camera clearance includes the lake.
+
+Steep blue river triangles supply clustered waterfall spray sites. At most twelve
+sites within 75 m emit droplets and drifting mist into the existing particle pool,
+including downstream impact mist. No extra particle draw calls are added.
+Underwater rendering, scene refraction and a separate free-falling waterfall sheet
+remain future work. The river follows authored slopes, including any uphill
+irregularities, rather than a simulated watercourse.
+
+Fly provides fifteen seconds of controlled flight at up to roughly eight metres
+above terrain, followed by a gentle automatic descent. WASD steers; Ctrl can
+land early. Landing starts a five-second cooldown, shown in the bottom-right
+indicator. Wind ribbons, a lifted robe and a takeoff burst accompany the spell.
+Feet leave no tracks in flight. Existing solid prop cylinders block airborne
+movement and support landings on their flat tops; these are approximate bounds,
+not detailed rock or tree geometry. Freeze time pauses flight and cooldown.
 
 ### Terrain
 

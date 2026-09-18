@@ -20,6 +20,9 @@ export const input = {
 
     surf: false, // RMB held
     sprint: false, // shift
+    flyPressed: false,
+    flyUp: false,
+    flyDown: false,
 
     /** @type {number} 0 = none, else 1..9 — set on keydown, cleared each frame */
     spellPressed: 0,
@@ -37,6 +40,7 @@ export function resetInput() {
     for (const key in keys) keys[key] = false;
     input.moveX = input.moveZ = input.lookX = input.lookY = input.zoomDelta = input.spellPressed = 0;
     input.moving = input.surf = input.sprint = input.spellHeld2 = input.spellHeld7 = false;
+    input.flyPressed = input.flyUp = input.flyDown = false;
 }
 
 function isUI(target) {
@@ -62,6 +66,7 @@ export function initInput(canvas, hooks) {
     document.addEventListener("pointerlockchange", () => {
         input.locked = document.pointerLockElement === canvas;
         if (!input.locked) {
+            input.flyPressed = input.flyUp = input.flyDown = false;
             // Drop held state so the character doesn't run off while unfocused.
             for (const k in keys) keys[k] = false;
             input.surf = false;
@@ -104,7 +109,10 @@ export function initInput(canvas, hooks) {
             onToggleOverlay?.();
             return;
         }
-        if (isUI(e.target) || e.repeat) return;
+        if (isUI(e.target)) return;
+        if (e.code === 'Space') e.preventDefault();
+        if (e.repeat) return;
+        if (e.code === 'Space') input.flyPressed = true;
         keys[e.code] = true;
 
         const n = SPELL_KEYS[e.code];
@@ -122,6 +130,7 @@ export function initInput(canvas, hooks) {
     });
 
     window.addEventListener("blur", () => {
+        input.flyPressed = input.flyUp = input.flyDown = false;
         for (const k in keys) keys[k] = false;
         input.surf = false;
         input.spellHeld2 = false;
@@ -164,6 +173,8 @@ export function pollInput() {
     input.moveZ = z;
     input.moving = len > 0.001;
     input.sprint = !!(keys.ShiftLeft || keys.ShiftRight);
+    input.flyUp = !!keys.Space;
+    input.flyDown = !!(keys.ControlLeft || keys.ControlRight);
 }
 
 /** Clear per-frame accumulators. Called at the very end of the frame. */
@@ -172,6 +183,7 @@ export function endFrame() {
     input.lookY = 0;
     input.zoomDelta = 0;
     input.spellPressed = 0;
+    input.flyPressed = false;
 }
 
 export function isDown(code) {

@@ -166,18 +166,27 @@ export class DesertProps {
         const mat = new ShaderMaterial(`desert:${pass || 'beauty'}:${source.name}`, this.scene, 'desertProp', {
             shaderLanguage: ShaderLanguage.WGSL,
             attributes: ['position','normal','uv'],
-            defines: [...(pass ? [`#define ${pass}`] : []), ...(batch.windEnabled ? ['#define PROP_WIND'] : [])],
+            defines: [...(pass ? [`#define ${pass}`] : []), ...(batch.windEnabled ? ['#define PROP_WIND'] : []), ...(source.unlit ? ['#define PROP_UNLIT'] : [])],
             uniforms: ['world','viewProjection','lightViewProjection','uvMatrix','baseColor','alphaCutoff','gammaDecode','roughness','normalStrength',
                 'cameraPos','cullCenter','cullDistance','sunDir','sunRadiance','shR','cascadeMatrices','cascadeSplits','cascadeParams','shadowTexel','shadowSoftness','shadowBias',
                 'ambientIntensity','fogDensity','fogHeightFalloff','fogStart','aerialStrength','spellLightPos','spellLightCol','spellLightCount',
-                'propWind','windTime','windBounds'],
-            samplers: ['baseTex','normalTex','roughTex','skyLUT','cascade0','cascade1','cascade2'],
+                'propWind','windTime','windBounds','emissiveMatrix','emissiveColor','emissiveGamma'],
+            samplers: ['baseTex','normalTex','roughTex','emissiveTex','skyLUT','cascade0','cascade1','cascade2'],
         });
         mat.backFaceCulling = source.backFaceCulling;
         mat.setTexture('baseTex', source.albedoTexture || this.white);
         mat.setTexture('normalTex', source.bumpTexture || this.flat);
         mat.setTexture('roughTex', source.metallicTexture || this.white);
         mat.setMatrix('uvMatrix', source.albedoTexture?.getTextureMatrix() || Matrix.Identity());
+        const emission=source.emissiveTexture;
+        const strength=(source.emissiveIntensity ?? 1)*(emission?.level ?? 1);
+        mat.setTexture('emissiveTex',emission || this.white);
+        mat.setMatrix('emissiveMatrix',emission?.getTextureMatrix() || Matrix.Identity());
+        mat.setVector3('emissiveColor',new Vector3(
+            (source.emissiveColor?.r ?? 0)*strength,
+            (source.emissiveColor?.g ?? 0)*strength,
+            (source.emissiveColor?.b ?? 0)*strength));
+        mat.setFloat('emissiveGamma',emission?.gammaSpace && !emission?._texture?._useSRGBBuffer ? 1 : 0);
         const color = source.albedoColor;
         mat.setVector4('baseColor', new Vector4(color.r,color.g,color.b,source.alpha));
         mat.setFloat('alphaCutoff', source.needAlphaBlending() || source.needAlphaTesting() ? (source.alphaCutOff || .5) : 0);
@@ -191,7 +200,7 @@ export class DesertProps {
         mat.setVector2('windBounds', batch.windBounds);
         mat.setTexture('skyLUT', this.sky.lut);
         for (let i=0;i<3;i++) mat.setTexture(`cascade${i}`,this.shadows.maps[i]);
-        this.passes.push({ mat, mesh: batch.mesh, pass });
+        this.passes.push({ mat, mesh: batch.mesh, pass, instanced: batch.instanced ?? true });
         return mat;
     }
     update(camera, focus, force = false, dt = 0) {
@@ -233,7 +242,7 @@ export class DesertProps {
         }
     }
     async warmUp() {
-        for (const { mat, mesh } of this.passes) await whenReady(mat,mat.name,[mesh,true]);
+        for (const { mat, mesh, instanced } of this.passes) await whenReady(mat,mat.name,[mesh,instanced]);
     }
     dispose() {
         for (const b of this.batches) { b.mesh.dispose(); b.far.dispose(); }

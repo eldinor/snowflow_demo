@@ -17,6 +17,8 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Scalar } from "@babylonjs/core/Maths/math.scalar";
 import { input } from "../core/input.js";
 import { expDamp } from "../core/camera.js";
+import { Flight } from './flight.js';
+import { Swimming } from './swimming.js';
 
 const _wish = new Vector3();
 const _fwd = new Vector3();
@@ -44,6 +46,8 @@ export class CharacterController {
      */
     constructor(terrain) {
         this.terrain = terrain;
+        this.flight = new Flight();
+        this.swimming = new Swimming();
 
         this.position = new Vector3(0, 0, 0);
         this.velocity = new Vector3(0, 0, 0);
@@ -124,7 +128,25 @@ export class CharacterController {
         const h = Math.min(dt, 1 / 30);
 
         this.prevVelocity.copyFrom(this.velocity);
-        this.surfActive = input.surf;
+        rig.getFlatForward(_fwd);
+        rig.getFlatRight(_right);
+        const flyingFrame=this.flight.update(dt, this, input, _fwd, _right);
+        if(flyingFrame){this.swimming.active=false;this.swimming.justEntered=false;}
+        if (flyingFrame || this.swimming.update(dt, this, input, _fwd, _right)) {
+            this.surf = 0; this.surfActive = false;
+            this.stepping = this.footfall = false;
+            this.gaitPhase = 0;
+            this.speed = Math.hypot(this.velocity.x, this.velocity.z);
+            this.speed01 = this.speed / SURF_MAX;
+            this.streak01 = 0;
+            this.acceleration.set(0,0,0);
+            this.lean = expDamp(this.lean, 0, 6, h);
+            this.carve = 0;
+            this.groundNormal.set(0,1,0);
+            if (this.speed > .1) this.facing = angleDamp(this.facing, Math.atan2(this.velocity.x,this.velocity.z), 6, h);
+            return;
+        }
+        this.surfActive = input.surf && !this.terrain.water?.sample(this.position.x,this.position.z);
 
         // Ease the surf blend — entering and exiting are transitions, not switches.
         this.surf = expDamp(this.surf, this.surfActive ? 1 : 0, this.surfActive ? 2.6 : 3.4, h);
@@ -145,6 +167,7 @@ export class CharacterController {
         this.terrain.heightfield?.clampToPlayArea(this.position);
 
         this.groundY = this.terrain.heightAt(this.position.x, this.position.z);
+        if (this.terrain.obstacles) this.groundY = Math.max(this.groundY, this.terrain.obstacles.supportHeight(this.position));
         this.terrain.normalAt(this.position.x, this.position.z, this.groundNormal);
         // Snap with a little softness so micro-ripples don't jitter the rig.
         this.position.y = expDamp(this.position.y, this.groundY, 26, h);

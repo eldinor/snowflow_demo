@@ -90,6 +90,23 @@ export class PropCollisions {
             velocity.x-=speedInto*nx; velocity.z-=speedInto*nz;
         }
     }
+    supportHeight(position, radius=AVATAR_RADIUS) {
+        let top = -Infinity;
+        for (const c of this.query(position.x,position.z,position.x,position.z,radius)) {
+            if (Math.hypot(position.x-c.x,position.z-c.z) < c.radius+radius && c.maxY <= position.y+.01) top=Math.max(top,c.maxY);
+        }
+        return top;
+    }
+    /** Vertical body sweep after horizontal sliding: stops on tops and undersides. */
+    verticalLimit(position, nextY, radius=AVATAR_RADIUS, height=AVATAR_HEIGHT) {
+        let result=nextY;
+        for (const c of this.query(position.x,position.z,position.x,position.z,radius)) {
+            if (Math.hypot(position.x-c.x,position.z-c.z) >= c.radius+radius) continue;
+            if (nextY < position.y && position.y >= c.maxY && nextY < c.maxY) result=Math.max(result,c.maxY);
+            if (nextY > position.y && position.y+height <= c.minY && nextY+height > c.minY) result=Math.min(result,c.minY-height);
+        }
+        return result;
+    }
     cameraFraction(start,end,radius=.25) {
         let fraction=1;
         for (const c of this.query(start.x,start.z,end.x,end.z,radius)) {

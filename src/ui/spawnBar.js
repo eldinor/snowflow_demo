@@ -1,10 +1,36 @@
 import { DEFAULT_SPAWN, SPAWN_POINTS } from "../world/spawnPoints.js";
+import { S, SCHEMA, set, onChange } from '../core/settings.js';
 import "./spawnBar.css";
 
 export class SpawnBar {
     constructor(onSelect, onTextureChange) {
         this.root = document.getElementById("spawn-bar");
         this.panel = document.getElementById('terrain-panel');
+        const windPanel = this.panel.querySelector('#wind-panel');
+        const windKeys = ['windDirection', 'windStrength', 'bushWindStrength', 'bushWindSpeed'];
+        const unsubscribers = [];
+        for (const key of windKeys) {
+            const setting = SCHEMA.flatMap(group => group.items).find(item => item.k === key);
+            const row = document.createElement('div');
+            row.className = 'wind-control';
+            const label = document.createElement('label');
+            label.htmlFor = `sidebar-${key}`;
+            label.textContent = key === 'windDirection' ? 'Direction' : setting.l;
+            const output = document.createElement('output');
+            output.htmlFor = `sidebar-${key}`;
+            const slider = document.createElement('input');
+            Object.assign(slider, { type: 'range', id: `sidebar-${key}`, min: setting.min, max: setting.max, step: setting.step });
+            const sync = value => {
+                slider.value = value;
+                output.textContent = key === 'windDirection' ? `${Math.round(value)}°` : Number(value).toFixed(2);
+            };
+            sync(S[key]);
+            slider.addEventListener('input', () => set(key, Number(slider.value)));
+            unsubscribers.push(onChange(key, sync));
+            row.append(label, output, slider);
+            windPanel.append(row);
+        }
+        if (import.meta.hot) import.meta.hot.dispose(() => unsubscribers.forEach(unsubscribe => unsubscribe()));
         const desert = this.panel.querySelector('#use-desert-textures');
         const procedural = this.panel.querySelector('#use-procedural-textures');
         const selectTextures = (useDesert) => {

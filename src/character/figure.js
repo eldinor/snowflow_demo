@@ -253,7 +253,9 @@ export class Figure {
         // order of magnitude larger than anything walking produces: letting go at
         // top speed decelerates at 30 m/s^2, which unclamped throws the torso
         // twenty degrees backwards and reads as a fall rather than as a scrub.
-        const pitchWant =
+        // A pronounced flight lean grows with forward speed; hovering is upright.
+        const flightForward = Math.max(0, ch.velocity.x * Math.sin(ch.facing) + ch.velocity.z * Math.cos(ch.facing));
+        const pitchWant = ch.swimming.active ? .3 + .3 * clamp(ch.speed / 3.8,0,1) : ch.flight.active ? 0.65 * clamp(flightForward / 18, 0, 1) :
             0.10 * run
             + 0.012 * clamp(fwdAcc, -9, 22)
             + surf * (0.30 + 0.16 * ch.speed01);
@@ -281,7 +283,7 @@ export class Figure {
         // ------------------------------------------------------------- spine
         const gx = ch.position.x;
         const gz = ch.position.z;
-        const groundY = this.terrain.heightAt(gx, gz);
+        const groundY = ch.flight.active || ch.swimming.active ? ch.position.y : Math.max(this.terrain.heightAt(gx, gz), ch.groundY);
 
         const rootY = groundY - this.sink + this.hipY + this.bob;
 
@@ -362,7 +364,26 @@ export class Figure {
      * and read unchanged for the rest of the stance — so no amount of body
      * motion, camera motion or frame-rate variation can move a planted foot.
      */
+    _footHeight(x, z, ch) {
+        const support = this.terrain.obstacles?.supportHeight({x, y: ch.position.y, z}) ?? -Infinity;
+        return Math.max(this.terrain.heightAt(x,z), support);
+    }
+
     _updateFeet(h, ch) {
+        if (ch.flight.active || ch.swimming.active) {
+            const rx = Math.cos(ch.facing), rz = -Math.sin(ch.facing);
+            for (let f=0; f<2; f++) {
+                const side = f===0 ? -.14 : .14;
+                const kick=ch.swimming.active ? Math.sin(ch.swimming.time*5+f*Math.PI)*.1 : 0;
+                const back=ch.swimming.active ? -.3 : 0;
+                this.footPos.set([ch.position.x+rx*side+Math.sin(ch.facing)*back, ch.position.y+.08+kick, ch.position.z+rz*side+Math.cos(ch.facing)*back], f*3);
+                this.footNormal.set([0,1,0], f*3);
+                this.footWeight[f] = 0;
+                this.touchdown[f] = false;
+            }
+            this._feetInitialized = false;
+            return;
+        }
         const surf = ch.surf;
         const speed = ch.speed;
         const run = Math.min(1, speed / 5.4);
@@ -381,7 +402,7 @@ export class Figure {
                 const side = f === 0 ? -0.105 : 0.105;
                 const x = ch.position.x + rgtX * side + fwdX * 0.02;
                 const z = ch.position.z + rgtZ * side + fwdZ * 0.02;
-                this.plant.set([x, this.terrain.heightAt(x, z) - this.sink * 0.7, z], f * 3);
+                this.plant.set([x, this._footHeight(x, z, ch) - this.sink * 0.7, z], f * 3);
             }
             this._feetInitialized = true;
         }
@@ -409,7 +430,7 @@ export class Figure {
                     // Touchdown. This is the only line in the file that writes a
                     // plant position.
                     this.plant[f * 3] = nx;
-                    this.plant[f * 3 + 1] = this.terrain.heightAt(nx, nz) - this.sink * 0.7;
+                    this.plant[f * 3 + 1] = this._footHeight(nx, nz, ch) - this.sink * 0.7;
                     this.plant[f * 3 + 2] = nz;
                     this.touchdown[f] = true;
                 } else {
@@ -424,13 +445,13 @@ export class Figure {
                     this.plant[f * 3 + 2] = damp(this.plant[f * 3 + 2], sz, 7, h);
                     this.plant[f * 3 + 1] = damp(
                         this.plant[f * 3 + 1],
-                        this.terrain.heightAt(this.plant[f * 3], this.plant[f * 3 + 2]) - this.sink * 0.7,
+                        this._footHeight(this.plant[f * 3], this.plant[f * 3 + 2], ch) - this.sink * 0.7,
                         7, h
                     );
                 }
                 this.footPos[f * 3] = this.plant[f * 3];
                 if (this.terrain.exalted) {
-                    this.plant[f * 3 + 1] = this.terrain.heightAt(this.plant[f * 3], this.plant[f * 3 + 2]) - this.sink * 0.7;
+                    this.plant[f * 3 + 1] = this._footHeight(this.plant[f * 3], this.plant[f * 3 + 2], ch) - this.sink * 0.7;
                 }
                 this.footPos[f * 3 + 1] = this.plant[f * 3 + 1];
                 this.footPos[f * 3 + 2] = this.plant[f * 3 + 2];
@@ -442,7 +463,7 @@ export class Figure {
                 // the foot is always aimed at where the body will actually be.
                 const s = (ph - duty) / (1 - duty);
                 const e = s * s * (3 - 2 * s);
-                const ny = this.terrain.heightAt(nx, nz) - this.sink * 0.7;
+                const ny = this._footHeight(nx, nz, ch) - this.sink * 0.7;
                 const px = this.plant[f * 3], py = this.plant[f * 3 + 1], pz = this.plant[f * 3 + 2];
                 this.footPos[f * 3] = px + (nx - px) * e;
                 this.footPos[f * 3 + 2] = pz + (nz - pz) * e;
@@ -464,7 +485,7 @@ export class Figure {
                 const along = f === 0 ? 0.11 : -0.11;
                 const sx = ch.position.x + fwdX * along + rgtX * lateral;
                 const sz = ch.position.z + fwdZ * along + rgtZ * lateral;
-                const sy = this.terrain.heightAt(sx, sz) - this.sink;
+                const sy = this._footHeight(sx, sz, ch) - this.sink;
                 const o = f * 3;
                 this.footPos[o] += (sx - this.footPos[o]) * surf;
                 this.footPos[o + 1] += (sy - this.footPos[o + 1]) * surf;
@@ -600,6 +621,16 @@ export class Figure {
                 tz += (sz - tz) * surf;
             }
 
+            if (ch.swimming.active) {
+                const stroke=Math.sin(ch.swimming.time*3.8+sgn*Math.PI*.5);
+                tx=_sh[0]+rX*sgn*.35+fX*(.25+stroke*.23);
+                ty=_sh[1]-.22-Math.cos(ch.swimming.time*3.8+sgn*Math.PI*.5)*.12;
+                tz=_sh[2]+rZ*sgn*.35+fZ*(.25+stroke*.23);
+            } else if (ch.flight.active) {
+                tx = _sh[0] + rX * sgn * .48 + fX * .12;
+                ty = _sh[1] + rY * sgn * .48 - .12;
+                tz = _sh[2] + rZ * sgn * .48 + fZ * .12;
+            }
             // Elbows point back and out.
             const px = -fX + rX * (sgn * 0.55), py = -fY + rY * (sgn * 0.55) - 0.35, pz = -fZ + rZ * (sgn * 0.55);
             solveTwoBone(

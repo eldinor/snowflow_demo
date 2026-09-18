@@ -11,6 +11,7 @@ export default defineConfig({
     build: {
         target: "esnext",
         sourcemap: true,
+        rollupOptions: { input: { main: 'index.html', forest: 'forest.html' } },
     },
     // .wgsl imported via ?raw
     assetsInclude: ["**/*.hdr", "**/*.env"],
