@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { PropCollisions, solidPropKind } from '../src/world/propCollisions.js';
+import { PropCollisions, solidPropKind } from '../src/world/propCollisions.ts';
 const world = () => { const w=new PropCollisions(); w.add({x:0,z:0,radius:1,minY:0,maxY:3}); return w; };
 test('continuous sweep blocks a fast crossing and removes inward velocity',()=>{
     const p={x:-20,y:0,z:0},v={x:100,y:0,z:0};

@@ -1,5 +1,5 @@
 // -----------------------------------------------------------------------------
-// snowPostCommon — the conventions every screen-space pass shares.
+// snowPostCommon вЂ” the conventions every screen-space pass shares.
 //
 // One place for the coordinate agreement, because getting it wrong is silent:
 // a vertically mirrored depth lookup still produces plausible-looking occlusion,
@@ -14,16 +14,16 @@
 //   `fragmentInputs.position.xy / renderSize` are the *same* number in every
 //   pass, and both run bottom-up: vUV.y = 1 is the top of the image. So NDC y in
 //   the ordinary, unflipped sense is `vUV.y * 2 - 1`, and a world point projected
-//   with `scene.getTransformMatrix()` lands at `ndc * 0.5 + 0.5` — no flip
+//   with `scene.getTransformMatrix()` lands at `ndc * 0.5 + 0.5` вЂ” no flip
 //   anywhere, as long as nothing in this file invents one.
 //
 // View space is left-handed with +z forward, matching the camera.
 // -----------------------------------------------------------------------------
 
-/// Cleared value of the depth prepass. Must match `DEPTH_FAR` in depthPass.js.
+/// Cleared value of the depth prepass. Must match `DEPTH_FAR` in depthPass.ts.
 const POST_FAR: f32 = 9000.0;
 
-/// True where the prepass wrote nothing — sky, or a discarded fragment.
+/// True where the prepass wrote nothing вЂ” sky, or a discarded fragment.
 fn isBackground(z: f32) -> bool {
     return z > POST_FAR * 0.5;
 }
@@ -44,7 +44,7 @@ fn uvFromView(p: vec3f, projInfo: vec2f) -> vec2f {
     return ndc * 0.5 + 0.5;
 }
 
-/// Interleaved gradient noise — the cheapest per-pixel dither that TAA resolves
+/// Interleaved gradient noise вЂ” the cheapest per-pixel dither that TAA resolves
 /// cleanly, because its spectrum is close to blue over a 3x3 neighbourhood.
 fn ignPost(p: vec2f) -> f32 {
     return fract(52.9829189 * fract(dot(p, vec2f(0.06711056, 0.00583715))));

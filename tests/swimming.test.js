@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Swimming,SWIM_DRAFT } from '../src/character/swimming.js';
-import { Flight,FLIGHT_COOLDOWN } from '../src/character/flight.js';
-import { PropCollisions } from '../src/world/propCollisions.js';
-import { WaterSurface,waterfallEmitters } from '../src/world/waterSurface.js';
+import { Swimming,SWIM_DRAFT } from '../src/character/swimming.ts';
+import { Flight,FLIGHT_COOLDOWN } from '../src/character/flight.ts';
+import { PropCollisions } from '../src/world/propCollisions.ts';
+import { WaterSurface,waterfallEmitters } from '../src/world/waterSurface.ts';
 const forward={x:0,z:1},right={x:1,z:0};
 function setup(){
     const terrain={heightAt:()=>-5,water:{sample:()=>({level:0,depth:5})},obstacles:new PropCollisions()};

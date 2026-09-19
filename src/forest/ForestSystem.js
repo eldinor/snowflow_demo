@@ -20,7 +20,7 @@ import { Camera } from '@babylonjs/core/Cameras/camera';
 import { Constants } from '@babylonjs/core/Engines/constants';
 import { Frustum } from '@babylonjs/core/Maths/math.frustum';
 import { MeshoptSimplifier } from 'meshoptimizer/simplifier';
-import { PropCollisions } from '../world/propCollisions.js';
+import { PropCollisions } from '../world/propCollisions.ts';
 import { DEFAULTS,groupPlacements,lodFor,retained } from './chunks.js';
 import { reduceFoliage } from './foliageLod.js';
 import { attachBatchGeometry } from './batchGeometry.js';

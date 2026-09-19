@@ -1,3 +1,9 @@
+The mountain viewer is at **[/snow_mountain.html](/snow_mountain.html)** and uses the world sky, shadows, fog and post-processing. Click to look; WASD moves, Space/Ctrl changes altitude and Shift speeds up flight.
+
+TypeScript preparation: `npm run typecheck`; automated tests: `npm test`. Legacy JavaScript and the demo pages are not strictly checked. See [TS_Migration.md](TS_Migration.md).
+
+Forest work is deferred until replacement models arrive; requirements and lessons are retained in [FOREST_SPEC.md](FOREST_SPEC.md). The old demo remains available as a reference.
+
 # EXALTED
 
 World website: [exaltedgaming.gg](https://exaltedgaming.gg/).
@@ -411,9 +417,12 @@ npm run preview  # serve the production build
 
 ## Layout
 
+See [ARCHITECTURE.md](ARCHITECTURE.md) for system ownership, startup and frame
+ordering, data flow, rendering passes, and extension points.
+
 ```
 src/
-  main.js            entry point and frame orchestration
+  main.ts            entry point and frame orchestration
   core/              settings, input, camera rig, perf, loading, GPU helpers
   terrain/           heightfield, clipmap mesh, deformation state buffer
   render/            sky + IBL, shadow cascades, depth prepass

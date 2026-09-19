@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Exalted · Forest road</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #17232d; color: #eef5fa; font: 14px system-ui, sans-serif; }
+    canvas { display: block; width: 100vw; height: 100vh; outline: none; }
+    aside { position: fixed; top: 0; left: 0; padding: 14px; width: 280px; background: #14232ee8; border-radius: 0 0 8px 0; }
+    a { color: #a7d4e7; } h1 { font-size: 18px; margin: 12px 0; }
+    p { line-height: 1.5; } label { display: block; margin: 12px 0; }
+    input { width: 100%; } button { cursor: pointer; padding: 7px 12px; }
+    #status { color: #c5d9c9; }
+  </style>
+</head>
+<body data-viewer="forest-road">
+  <canvas id="view" tabindex="0" aria-label="Forest road 3D view"></canvas>
+  <aside>
+    <a href="./">← Exalted</a><h1>Forest road</h1>
+    <p id="status" role="status">Loading world renderer…</p>
+    <p>Click the scene to look around. WASD moves; Space rises; Ctrl descends. Hold Shift to fly faster. Esc releases the mouse.</p>
+    <label>Flight speed: <output id="speed-value">80</output> m/s
+      <input id="speed" type="range" min="10" max="250" value="80" step="5">
+    </label>
+    <button id="reset" type="button">Reset view</button>
+    <label>Exposure: <output id="exposure-value">0.180</output>
+      <input id="exposure" type="range" min="0.04" max="0.4" step="0.005" value="0.18">
+    </label>
+    <label><input id="shadows" type="checkbox" checked style="width:auto"> Forest shadows</label>
+    <label><input id="taa" type="checkbox" checked style="width:auto"> Temporal anti-aliasing (TAA)</label>
+    <details>
+      <summary>Flicker diagnostics</summary>
+      <label><input id="post-processing" type="checkbox" checked style="width:auto"> Post-processing</label>
+      <label>Effect isolation
+        <select id="post-effect" style="width:100%;margin-top:6px">
+          <option value="full">All world effects</option>
+          <option value="color">Tone mapping only</option>
+          <option value="bloom">Tone mapping + bloom</option>
+          <option value="showLightShafts">Tone mapping + light shafts</option>
+          <option value="grain">Tone mapping + film grain</option>
+          <option value="sharpen">Tone mapping + sharpening</option>
+        </select>
+      </label>
+      <label><input id="sky-visible" type="checkbox" checked style="width:auto"> Visible sky</label>
+      <small>Disabling post-processing bypasses all screen effects, including tone mapping, so brightness will change. Hiding the sky keeps its lighting.</small>
+    </details>
+    <p>Original GLB texture · 1 km terrain width<br>Exalted sky, shadows, fog and post-processing</p>
+  </aside>
+  <script type="module" src="/src/mountain/demo.js"></script>
+</body>
+</html>

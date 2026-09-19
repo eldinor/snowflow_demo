@@ -1,6 +1,14 @@
 # Staged TypeScript migration plan
 
-Status: proposed; implementation has not started.
+Status: The main application migration is complete through Stage 7. The production
+source tree is strictly typed; standalone forest and mountain demos remain JavaScript.
+
+TypeScript 5.9, tsx, browser and Node configurations are installed. `npm run typecheck` checks the production application strictly while the explicitly excluded demo folders remain JavaScript. The main terrain coordinator and its core data layer are now TypeScript: procedural heightfield baking and CPU sampling, terrain triangle sampling, biome weights, planar UV recovery, the Exalted GLB terrain loader, local soft-terrain partitioning, persistent GPU deformation and grounding probes, persistent world-water rendering, water geometry and swimming-surface lookup, spawn-point data, and static prop collision. Shared character movement contracts, swimming, timed flight, walking, surfing, terrain grounding, gait events, snow/sand contact brushes, the avatar rendering owner, procedural skeleton/IK pose solver, garment panel model, Verlet cloth solver, procedural avatar geometry builder, and its flat-array rigid-transform math are also migrated. The character conversion preserves its authored lofts, skin weights, fur shells, fixed cloth storage, rest constraints, apparent wind, body capsules, terrain contact, zero-allocation bone transforms, and packed GPU vertex layouts. The shared input and pointer-lock layer, third-person camera rig, key-specific settings store, frame statistics and graph, loading-screen lifecycle, analytic sky, camera-depth prepass, stabilized cascaded shadows, asynchronous GPU readiness, and zero-copy matrix-array binding are typed as well. Stage 6 is complete, covering typed spell easing, parallel-transport frames, ground rays, aim-point fallback, fixed spell lights, shared swept-water strands, pooled crystals, the central spell coordinator, the distance-sampled Rift lifecycle, Crystallise's staged formation and terrain glaze, Aegis's held wall and owned crystal-handle lifecycle, Thaw's recovery pulse, runoff strand, and cleanup lifecycle, Avalanche's terrain-following sheet, distance-sampled track, and spray lifecycle, Sweep's translating crescent, plough deformation, and strand cleanup, Bloom's eruption column, one-shot crater, and delayed fallout lifecycle, Vortex's transported helices, surface stripping, grain emission, and multi-strand cleanup, and Ribbon's retained path, throw physics, impact, terrain scoring, and strand lifecycle. The src/spells migration and integration audit are complete; key routing, held/release transitions, cancellation, and shared resource ownership were checked. Ribbon now rejects a cast cleanly when the shared strand pool is exhausted. The shared SprayField VFX pool is now typed as well, including fixed particle storage, sand classification, simulation, packed texture upload, shader bindings, warm-up, and disposal; the spell folder no longer crosses a JavaScript type boundary. The surf wake is typed too, preserving its fixed spine ring, resolved two-sided crest, packed GPU texture, plume emission, shadow/depth materials, warm-up, and disposal lifecycle. Water effects are typed across bounded nearby-waterfall selection, pooled spray, ripple bursts, swimming strokes, and flight landing transitions. Flight feedback is typed across ribbon geometry, timer colours, takeoff spray, HUD ownership, and disposal. The src/vfx JavaScript-to-TypeScript conversion is complete. The post-processing chain is typed across all nine passes, temporal history, resize invalidation, projection jitter, shader bindings, focus and streak state, and disposal; its three required Babylon internals are isolated behind narrow structural assertions. The remaining terrain render support is typed too: static clipmap lattice generation and shared desert texture/material bindings, with the sRGB texture internal isolated behind one narrow interface. Authored desert props are typed across GLB/PBR source narrowing, geometry/material batching, thin-instance near/far LOD buffers, collision extraction, wind and shader passes, placement audit data, warm-up, and disposal. The UI layer is typed across settings widgets, performance and camera diagnostics, spawn navigation, wind and texture controls, and the lazily loaded Inspector lifecycle. The central WGSL registry is typed across immutable include and shader-source maps while preserving its idempotent registration contract. The typed main entry now owns boot sequencing, warm-up, resize scheduling, the frame loop, spawn transitions, diagnostics, and the browser inspection surface. JavaScript demo consumers import shared `.ts` modules directly through Vite. Displays and their video integration have been removed. Forest requirements are retained in [FOREST_SPEC.md](FOREST_SPEC.md).
+
+The standalone `snow_mountain.html`, `forest_road.html`, and legacy `forest.html`
+pages are demos and remain JavaScript. They are excluded from the migration and
+may continue consuming migrated shared world modules through normal ES imports.
+The first conversion target is a small, tested dependency slice of the main app.
 
 ## Objective and scope
 
@@ -15,7 +23,7 @@ Repository snapshot from inspection:
 - Vite serves the main page and the separate `forest.html` performance demo.
 - Babylon packages are pinned to 9.18.0.
 - Tests currently use Node's test runner and import JavaScript modules directly.
-- No TypeScript configuration is present.
+- Browser and Node TypeScript configurations now support incremental migration.
 
 ## Working rules
 
@@ -27,12 +35,12 @@ Repository snapshot from inspection:
 - Prefer concrete interfaces, discriminated unions and `unknown` with validation.
   Avoid broad `any` types or assertions that merely silence errors.
 - Preserve typed arrays and allocation-conscious hot loops.
-- Maintain the main and forest entry points throughout.
+- Keep demo pages working, but do not convert their page-specific code to TypeScript.
 - Run type checks and relevant tests after changes. Do not build on every edit.
 - Do not use Playwright unless explicitly requested. Runtime visual checks must
   be performed manually or through another separately agreed workflow.
 
-## Stage 0 — Establish the baseline
+## Stage 0 вЂ” Establish the baseline
 
 Tasks:
 
@@ -40,8 +48,7 @@ Tasks:
 - Run the existing automated tests and record their results.
 - Document representative main-world checks: movement, footprints, flight,
   swimming, avatar cloth, shadows, displays and UI.
-- Record a forest performance sample at a fixed viewport, camera and settings,
-  including a traversal sample to expose LOD-update costs.
+- Record a main-world performance sample at a fixed viewport, camera and settings.
 - Identify existing issues so they are not mistaken for migration regressions.
 
 Completion criteria:
@@ -49,7 +56,7 @@ Completion criteria:
 - Test baseline and repeatable runtime check list exist.
 - Performance comparisons have a recorded device, resolution and scene setup.
 
-## Stage 1 — Add tooling without converting the application
+## Stage 1 вЂ” Add tooling without converting the application
 
 Tasks:
 
@@ -71,10 +78,11 @@ Tasks:
 Completion criteria:
 
 - Type checking and existing tests run successfully.
-- Both pages still load with no behavior changes.
-- The mixed-language test path works without generated files beside source files.
+- The main page still loads with no behavior changes; demos remain usable as JavaScript consumers.
+- Establish the mixed-language test path with the first migrated main-app slice,
+  without generating files beside source files.
 
-## Stage 2 — Define shared contracts
+## Stage 2 вЂ” Define shared contracts
 
 Tasks:
 
@@ -84,7 +92,6 @@ Tasks:
 - Define character movement state and the data consumed by animation and effects.
 - Type settings keys and their values precisely. Replace broad records where a
   fixed schema is known; make change callbacks preserve each key's value type.
-- Define forest options, asset manifests, placement records and performance reports.
 - Keep interfaces near their owning systems rather than creating one large global
   types file. Use type-only imports to avoid adding runtime dependency cycles.
 - Add runtime validation at external boundaries where needed. A TypeScript cast
@@ -96,30 +103,26 @@ Completion criteria:
 - Small compile-time checks reject invalid settings and incompatible interfaces.
 - Existing runtime data layouts and coordinate conventions remain unchanged.
 
-## Stage 3 — Migrate the isolated forest demo
+## Stage 3 вЂ” Migrate a tested main-application slice
 
 Tasks, in order:
 
-1. Convert pure helpers: chunks, foliage LOD, ground colours and shadow projection.
-2. Convert batch geometry handling and its buffer ownership boundaries.
-3. Convert `ForestSystem`, its options, statistics and lifecycle methods.
-4. Convert the forest page's DOM controls and measurement/export code.
-5. Update the HTML module entry and affected test imports.
+1. Select a small main-app dependency slice with existing unit coverage, starting
+   with pure math, collision, movement, or terrain-query helpers.
+2. Define contracts at that slice's boundaries and convert its leaf modules.
+3. Update production consumers and tests without changing runtime behavior.
+4. Use the result to estimate the remaining core, terrain and character work.
 
-Pay particular attention to Babylon mesh/material types, optional loaded state,
-typed-array handling and the existing use of internal buffer reference fields.
-Isolate unavoidable internal API access in a small adapter with an explanation
-and a regression test; do not hide it behind broad casts.
+The mountain and forest-road viewers may import converted shared modules, but
+their page-specific loading, UI and camera code stays JavaScript.
 
 Completion criteria:
 
-- Forest TypeScript passes strict checks and its automated tests pass.
-- Existing matrix-buffer isolation and shadow-stability tests still run.
-- Manual checks cover LOD, vegetation colours, grounding, wind, shadows and UI.
-- Equivalent performance samples show no unexplained regression. Record normal
-  run-to-run variation rather than treating every timing difference as a failure.
+- The selected production slice passes strict checks and its tests pass.
+- Main-world behavior covered by the slice matches the recorded baseline.
+- JavaScript consumers, including demos where relevant, still import it correctly.
 
-## Stage 4 — Migrate core utilities, terrain and world services
+## Stage 4 вЂ” Migrate core utilities, terrain and world services
 
 Tasks:
 
@@ -136,7 +139,7 @@ Completion criteria:
 - Grounding, collision, deformation and biome behavior match the baseline.
 - Remaining JavaScript consumers can still call the converted services.
 
-## Stage 5 — Migrate character and avatar systems
+## Stage 5 вЂ” Migrate character and avatar systems
 
 Tasks:
 
@@ -154,7 +157,7 @@ Completion criteria:
 - Manual checks cover foot planting, cloth, surfing, flight, swimming and shadows.
 - The rig, bind pose, movement behavior and GPU data layout are preserved.
 
-## Stage 6 — Migrate spells, effects, rendering and UI
+## Stage 6 вЂ” Migrate spells, effects, rendering and UI
 
 Tasks:
 
@@ -168,10 +171,10 @@ Tasks:
 Completion criteria:
 
 - All application modules in scope pass strict checking.
-- Both pages boot and affected runtime features pass the baseline checks.
+- The main page boots and affected runtime features pass the baseline checks.
 - Async initialization, teardown and resource disposal retain their behavior.
 
-## Stage 7 — Close the migration and enforce it
+## Stage 7 вЂ” Close the migration and enforce it
 
 Tasks:
 
@@ -182,7 +185,7 @@ Tasks:
 - Evaluate stricter indexed-access and optional-property checks, introducing them
   in manageable steps rather than adding large numbers of non-null assertions.
 - Include type checking and automated tests in CI if CI is present or introduced.
-- Perform one explicit final production validation of both entry points when
+- Perform one explicit final production validation of the main entry point when
   authorized; avoid production builds during routine migration edits.
 - Update contributor instructions for development, type checks, tests and asset preparation.
 
@@ -190,7 +193,7 @@ Completion criteria:
 
 - Application type coverage has no unexplained gaps or blanket error suppressions.
 - Tests and agreed final validations pass.
-- Main-world and forest performance/visual comparisons are documented.
+- Main-world performance and visual comparisons are documented.
 
 ## Validation limits and risk management
 
@@ -211,9 +214,9 @@ For each stage:
 
 The full migration is a multi-day task and may take longer where strict types
 expose inconsistent interfaces or reliance on engine internals. A precise schedule
-should follow the tooling setup and forest pilot rather than precede them.
+should follow the tooling setup and first main-application slice rather than precede it.
 
-Start with Stages 0–3. Use their results to estimate the remaining work, then
+Start with Stages 0вЂ“3. Use their results to estimate the remaining work, then
 migrate systems as they are modified. Write new substantial systems in TypeScript
 once the mixed-language toolchain is established. World development need not stop
 while the migration proceeds.

@@ -26,11 +26,15 @@ var sourceTexSampler: sampler;
 uniform srcTexel: vec2f;
 /// 1 on the first level: threshold and Karis-average. 0 on the rest.
 uniform prefilter: f32;
+/// Convert scene radiance to exposed units before filtering and thresholding.
+/// Later levels already contain exposed bloom and must not apply this again.
+uniform exposure: f32;
 /// Knee curve: (threshold, threshold - knee, 2*knee, 0.25/knee).
 uniform curve: vec4f;
 
 fn tap(uv: vec2f) -> vec3f {
-    return textureSampleLevel(sourceTex, sourceTexSampler, uv, 0.0).rgb;
+    let radiance = max(textureSampleLevel(sourceTex, sourceTexSampler, uv, 0.0).rgb, vec3f(0.0));
+    return radiance * select(1.0, uniforms.exposure, uniforms.prefilter > 0.5);
 }
 
 /// Soft-knee threshold. A hard cut puts a visible contour through any smooth

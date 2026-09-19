@@ -8,9 +8,10 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test tests/meshSurface.test.js tests/propCollisions.test.js tests/flight.test.js tests/waterGeometry.test.js tests/swimming.test.js tests/forest.test.js",
+    "test": "node --import tsx --test tests/meshSurface.test.js tests/propCollisions.test.js tests/flight.test.js tests/waterGeometry.test.js tests/swimming.test.js tests/forest.test.js tests/flyMovement.test.js",
     "prepare:forest": "node scripts/prepare-forest.mjs",
-    "test:browser": "playwright test"
+    "test:browser": "playwright test",
+    "typecheck": "tsc -p tsconfig.json"
   },
   "keywords": [
     "webgpu",
@@ -35,6 +36,10 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
+    "@types/node": "^22.20.3",
+    "@webgpu/types": "^0.1.72",
+    "tsx": "^4.23.13",
+    "typescript": "~5.9.3",
     "vite": "^8.1.5"
   }
 }

@@ -1,5 +1,5 @@
 // -----------------------------------------------------------------------------
-// snowShadowLookup — the receiving half of the cascaded shadow maps.
+// snowShadowLookup вЂ” the receiving half of the cascaded shadow maps.
 //
 // Lifted out of the snow material once the character needed the identical
 // lookup. Two independent copies of this would be a slow-motion disaster: the
@@ -7,7 +7,7 @@
 // things that are invisible to inspection and wrong in ways that only show up
 // as "the shadows swim a bit". One include, one convention.
 //
-// Contract — every material that includes this must declare:
+// Contract вЂ” every material that includes this must declare:
 //
 //   uniform sunDir: vec3f                    (points *toward* the sun)
 //   uniform cascadeMatrices: array<mat4x4f, 3>
@@ -40,7 +40,7 @@ fn sampleCascadeTex(
 
     // ---- the light's own basis -------------------------------------------
     // Reconstructed here rather than passed in, so it cannot drift out of sync
-    // with the matrix. This mirrors Matrix.LookAtLHToRef in shadows.js exactly:
+    // with the matrix. This mirrors Matrix.LookAtLHToRef in shadows.ts exactly:
     // forward is the direction the light travels, right = up x forward, and the
     // world up is only swapped out for a near-zenith sun, which this scene's
     // 0.5-45 degree elevation range never reaches.
@@ -50,7 +50,7 @@ fn sampleCascadeTex(
 
     // Surface normal in that basis. `nl.z` is the cosine between the normal and
     // the light's direction of travel, so it goes to zero exactly at the
-    // terminator — where the plane is edge-on to the light and its depth
+    // terminator вЂ” where the plane is edge-on to the light and its depth
     // gradient is genuinely infinite. Clamped to a slope of 6 (about 80 degrees),
     // past which extrapolating further would start detaching real shadows from
     // their casters rather than preventing acne.
@@ -76,9 +76,9 @@ fn sampleCascadeTex(
     let ndc = clip.xyz / clip.w;
     if (any(abs(ndc.xy) > vec2f(1.0)) || ndc.z < 0.0 || ndc.z > 1.0) { return 1.0; }
 
-    // NDC → UV, and the sign on Y is not the one you would write from first
+    // NDC в†’ UV, and the sign on Y is not the one you would write from first
     // principles. It is `+` because the map was rendered into a *render target*,
-    // and Babylon flips clip-space Y for those — WebGPU's texture origin is
+    // and Babylon flips clip-space Y for those вЂ” WebGPU's texture origin is
     // top-left where the framebuffer convention is bottom-left, so the engine
     // negates Y in the vertex stage to compensate. The depth map is therefore
     // already stored flipped, and applying the usual top-down flip here as well
@@ -87,7 +87,7 @@ fn sampleCascadeTex(
     // Measured, on the CPU, against a readback of cascade 0: sampling with
     // `0.5 - ndc.y*0.5` put the map and the receiver up to 30 m apart, with the
     // error passing through zero exactly at v = 0.5 and growing linearly either
-    // side — the mirror axis. With `0.5 + ndc.y*0.5` the same five points agree
+    // side вЂ” the mirror axis. With `0.5 + ndc.y*0.5` the same five points agree
     // to within 0.4 m, which is just the CPU height mirror against the GPU's
     // bicubic. That mirror axis sits at the cascade centre, which is fitted to
     // the camera frustum, which is why the shadows appeared to slide around with

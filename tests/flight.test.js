@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Flight, FLIGHT_HEIGHT, FLIGHT_DURATION, FLIGHT_COOLDOWN } from '../src/character/flight.js';
-import { PropCollisions } from '../src/world/propCollisions.js';
+import { Flight, FLIGHT_HEIGHT, FLIGHT_DURATION, FLIGHT_COOLDOWN } from '../src/character/flight.ts';
+import { PropCollisions } from '../src/world/propCollisions.ts';
 
 function setup() {
     const flight=new Flight();

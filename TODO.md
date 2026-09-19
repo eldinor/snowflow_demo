@@ -129,3 +129,11 @@ Validation: production build, four unit tests and five WebGPU browser tests pass
 - The map documents a **77 m climb over roughly 31 m near E0 N2**, before Stone Gate. Importing props does not fix that road obstruction.
 - Map heights can understate sharp peaks by up to 24 m; authored region boundaries can shift by up to 44 m through domain warp. Use the visible terrain and painted biome edges when checking placement.
 - Map source edits are normally made in `alpha-map.world.json` and followed by regeneration. That source and its height-function code are not available here; no authored layout changes have been requested.
+
+## Migration preparation and mountain viewer
+
+- [x] Remove spawn terminal, curved video display, surf label and their dedicated GLB/video assets.
+- [x] Install incremental TypeScript tooling with separate browser/Node checks and mixed-language tests.
+- [x] Preserve deferred forest requirements in FOREST_SPEC.md; replacement models will be handled later.
+- [x] Add snow_mountain.html using shared world rendering and simple fly controls.
+- [ ] Manually verify mountain texture, shadows, fog and camera controls on WebGPU.

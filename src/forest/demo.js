@@ -13,7 +13,7 @@ import { Color4 } from '@babylonjs/core/Maths/math.color';
 import { LoadAssetContainerAsync } from '@babylonjs/core/Loading/sceneLoader';
 import '@babylonjs/loaders/glTF';
 import { VertexData } from '@babylonjs/core/Meshes/mesh.vertexData';
-import { MeshSurface } from '../terrain/meshSurface.js';
+import { MeshSurface } from '../terrain/meshSurface.ts';
 import { ForestSystem } from './ForestSystem.js';
 import { DEFAULTS } from './chunks.js';
 import { smoothGroundColors } from './groundColors.js';

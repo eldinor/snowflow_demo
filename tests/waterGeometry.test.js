@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildWaterGeometry,blueWater } from '../src/world/waterGeometry.js';
+import { buildWaterGeometry,blueWater } from '../src/world/waterGeometry.ts';
 const reference={lake:[[-10,-10],[10,-10],[10,10],[-10,10]],river:[[0,0],[0,-10]]};
 const triangle=(heights,colors)=>({positions:[0,heights[0],0,4,heights[1],0,0,heights[2],4],indices:[0,1,2],colors:colors.flat()});
 const blue=[.22,.418,.617,1],sand=[.82,.68,.42,1];

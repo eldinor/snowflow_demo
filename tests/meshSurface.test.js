@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { MeshSurface } from "../src/terrain/meshSurface.js";
-import { surfaceWeights, SAND_COLORS } from '../src/terrain/surfaceTypes.js';
-import { fitPlanarUV } from '../src/terrain/planarUV.js';
+import { MeshSurface } from "../src/terrain/meshSurface.ts";
+import { surfaceWeights, SAND_COLORS } from '../src/terrain/surfaceTypes.ts';
+import { fitPlanarUV } from '../src/terrain/planarUV.ts';
 
 test('planar texture transfer preserves mirrored axes, metre scale and offsets',()=>{
     const positions=[-800,0,-500,800,2,-500,-800,3,1100,800,5,1100];
@@ -69,4 +69,11 @@ test("overlapping triangles choose the upper surface and ignore vertical faces",
     );
     assert.equal(surface.sample(2, 2), 7);
     assert.throws(() => surface.sample(9, 9), /No Exalted terrain triangle/);
+});
+
+test("surface grid remains available to the local terrain extractor", () => {
+    const surface = new MeshSurface([0,0,0, 8,0,0, 0,0,8], [0,1,2], 4);
+    assert.equal(surface._col(-100), 0);
+    assert.equal(surface._row(100), surface.rows - 1);
+    assert.ok(surface.cells[surface._row(1) * surface.cols + surface._col(1)].includes(0));
 });
