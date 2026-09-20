@@ -25,28 +25,16 @@
 import { setFrameFromDir, invertRigid, mul, xformPoint } from "../core/mat4.ts";
 import type { Terrain } from '../terrain/terrain.ts';
 import type { CharacterController } from './controller.ts';
+import {
+    AVATAR_BIND_FRAMES,
+    BONE_COUNT,
+    B_ROOT, B_SPINE, B_CHEST, B_NECK, B_HEAD, B_HOOD,
+    B_UPPER_L, B_FORE_L, B_HAND_L, B_UPPER_R, B_FORE_R, B_HAND_R,
+    B_THIGH_L, B_SHIN_L, B_FOOT_L, B_THIGH_R, B_SHIN_R, B_FOOT_R,
+} from './avatarRig.ts';
+export * from './avatarRig.ts';
 
 // --------------------------------------------------------------- bone indices
-export const B_ROOT = 0;
-export const B_SPINE = 1;
-export const B_CHEST = 2;
-export const B_NECK = 3;
-export const B_HEAD = 4;
-export const B_HOOD = 5;
-export const B_UPPER_L = 6;
-export const B_FORE_L = 7;
-export const B_HAND_L = 8;
-export const B_UPPER_R = 9;
-export const B_FORE_R = 10;
-export const B_HAND_R = 11;
-export const B_THIGH_L = 12;
-export const B_SHIN_L = 13;
-export const B_FOOT_L = 14;
-export const B_THIGH_R = 15;
-export const B_SHIN_R = 16;
-export const B_FOOT_R = 17;
-export const BONE_COUNT = 18;
-
 /**
  * Bind pose, nine floats per bone: joint position, bone direction, front
  * reference. A 1.79 m figure with the pelvis at 0.95 — deliberately a little
@@ -54,29 +42,6 @@ export const BONE_COUNT = 18;
  * fifteen metres through a robe and slightly heroic proportions survive that
  * better than accurate ones.
  */
-const BIND = new Float32Array([
-    /* ROOT    */ 0, 0.95, 0, 0, 1, 0, 0, 0, 1,
-    /* SPINE   */ 0, 1.06, 0, 0, 1, 0, 0, 0, 1,
-    /* CHEST   */ 0, 1.26, 0, 0, 1, 0, 0, 0, 1,
-    /* NECK    */ 0, 1.46, 0, 0, 1, 0, 0, 0, 1,
-    /* HEAD    */ 0, 1.55, 0, 0, 1, 0, 0, 0, 1,
-    /* HOOD    */ 0, 1.55, 0, 0, 1, 0, 0, 0, 1,
-
-    /* UPPER_L */ -0.185, 1.400, 0.000, -0.16, -0.987, 0, 0, 0, 1,
-    /* FORE_L  */ -0.230, 1.123, 0.000, -0.05, -0.997, 0.06, 0, 0, 1,
-    /* HAND_L  */ -0.243, 0.866, 0.016, -0.02, -0.992, 0.12, 0, 0, 1,
-    /* UPPER_R */ 0.185, 1.400, 0.000, 0.16, -0.987, 0, 0, 0, 1,
-    /* FORE_R  */ 0.230, 1.123, 0.000, 0.05, -0.997, 0.06, 0, 0, 1,
-    /* HAND_R  */ 0.243, 0.866, 0.016, 0.02, -0.992, 0.12, 0, 0, 1,
-
-    /* THIGH_L */ -0.100, 0.900, 0, 0, -1, 0, 0, 0, 1,
-    /* SHIN_L  */ -0.100, 0.460, 0, 0, -1, 0, 0, 0, 1,
-    /* FOOT_L  */ -0.100, 0.090, 0, 0, 0, 1, 0, 1, 0,
-    /* THIGH_R */ 0.100, 0.900, 0, 0, -1, 0, 0, 0, 1,
-    /* SHIN_R  */ 0.100, 0.460, 0, 0, -1, 0, 0, 0, 1,
-    /* FOOT_R  */ 0.100, 0.090, 0, 0, 0, 1, 0, 1, 0,
-]);
-
 /** Segment lengths implied by the bind table, metres. */
 const THIGH_LEN = 0.44;
 const SHIN_LEN = 0.37;
@@ -215,9 +180,9 @@ export class Figure {
             const o = b * 9;
             setFrameFromDir(
                 this.bind, b * 16,
-                BIND[o], BIND[o + 1], BIND[o + 2],
-                BIND[o + 3], BIND[o + 4], BIND[o + 5],
-                BIND[o + 6], BIND[o + 7], BIND[o + 8]
+                AVATAR_BIND_FRAMES[o], AVATAR_BIND_FRAMES[o + 1], AVATAR_BIND_FRAMES[o + 2],
+                AVATAR_BIND_FRAMES[o + 3], AVATAR_BIND_FRAMES[o + 4], AVATAR_BIND_FRAMES[o + 5],
+                AVATAR_BIND_FRAMES[o + 6], AVATAR_BIND_FRAMES[o + 7], AVATAR_BIND_FRAMES[o + 8]
             );
             invertRigid(this.invBind, b * 16, this.bind, b * 16);
         }

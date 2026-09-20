@@ -1,0 +1,32 @@
+{
+  "schema": "exalted-avatar-exchange",
+  "version": 1,
+  "units": "meters",
+  "upAxis": "+Y",
+  "forwardAxis": "+Z",
+  "rig": "exalted-humanoid-v1",
+  "parts": {
+    "body": {
+      "node": "part:body",
+      "mode": "skinned"
+    },
+    "head": {
+      "node": "part:head",
+      "mode": "rigid",
+      "bone": "head"
+    },
+    "cloth": {
+      "node": "reference:cloth",
+      "mode": "cloth-reference"
+    },
+    "fur": {
+      "node": "reference:fur",
+      "mode": "generated",
+      "bone": "hood"
+    }
+  },
+  "cloth": {
+    "editable": false,
+    "topology": "exalted-cloth-v1"
+  }
+}

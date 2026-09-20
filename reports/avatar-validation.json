@@ -1,0 +1,120 @@
+{
+  "schema": "exalted-avatar-validation",
+  "version": 1,
+  "source": "C:\\Users\\Fiolent23\\newrepos\\snow\\snowflow_demo\\avatar-export\\exalted-avatar.glb",
+  "byteLength": 531924,
+  "valid": true,
+  "generator": "Babylon.js v9.18.0",
+  "scene": {
+    "nodes": 21,
+    "meshes": 3,
+    "materials": 3,
+    "skins": 1
+  },
+  "rig": {
+    "expected": "exalted-humanoid-v1",
+    "joints": [
+      "root",
+      "spine",
+      "chest",
+      "neck",
+      "head",
+      "hood",
+      "upper_arm.L",
+      "forearm.L",
+      "hand.L",
+      "upper_arm.R",
+      "forearm.R",
+      "hand.R",
+      "thigh.L",
+      "shin.L",
+      "foot.L",
+      "thigh.R",
+      "shin.R",
+      "foot.R"
+    ],
+    "missing": [],
+    "additional": [],
+    "duplicated": []
+  },
+  "body": {
+    "height": 1.804029111750424,
+    "weightVertices": 1613,
+    "invalidWeightVertices": 0,
+    "maximumInfluences": 2,
+    "unknownJointVertices": 0
+  },
+  "meshes": [
+    {
+      "node": "part:body",
+      "vertices": 1613,
+      "triangles": 2838,
+      "attributes": [
+        "JOINTS_0",
+        "NORMAL",
+        "POSITION",
+        "TEXCOORD_0",
+        "WEIGHTS_0"
+      ],
+      "bounds": {
+        "min": [
+          -0.29376932978630066,
+          -0.00799656379967928,
+          -0.1940000057220459
+        ],
+        "max": [
+          0.29376932978630066,
+          1.7960325479507446,
+          0.21305501461029053
+        ]
+      }
+    },
+    {
+      "node": "reference:cloth",
+      "vertices": 788,
+      "triangles": 1408,
+      "attributes": [
+        "NORMAL",
+        "POSITION",
+        "TEXCOORD_0"
+      ],
+      "bounds": {
+        "min": [
+          -0.3620556592941284,
+          0.06583475321531296,
+          -0.3607238531112671
+        ],
+        "max": [
+          0.3922220468521118,
+          1.4420000314712524,
+          0.3115798532962799
+        ]
+      }
+    },
+    {
+      "node": "reference:fur",
+      "vertices": 5310,
+      "triangles": 8032,
+      "attributes": [
+        "JOINTS_0",
+        "NORMAL",
+        "POSITION",
+        "TEXCOORD_0",
+        "WEIGHTS_0"
+      ],
+      "bounds": {
+        "min": [
+          -0.3529999852180481,
+          0.8592310547828674,
+          -0.0989999994635582
+        ],
+        "max": [
+          0.3529999852180481,
+          1.853710651397705,
+          0.22303929924964905
+        ]
+      }
+    }
+  ],
+  "issues": []
+}

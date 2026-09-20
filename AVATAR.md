@@ -1,5 +1,9 @@
 # Avatar customization and asset workflow
 
+The staged implementation plan is maintained in
+[Avatar_Exchange.md](Avatar_Exchange.md).
+The artist workflow is documented in [Avatar_Guide.md](Avatar_Guide.md).
+
 ## Current implementation
 
 The avatar is generated in code rather than loaded from a rigged model. It uses
