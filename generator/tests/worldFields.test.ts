@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { BIOME_NAMES } from '../config/biomes.ts';
+import { TERRAIN_MATERIALS } from '../config/terrainMaterials.ts';
 import { WORLD_CONFIG } from '../config/world.ts';
 import { sampleBiomeWeights } from '../fields/biomes.ts';
 import { sampleClimate } from '../fields/climate.ts';
@@ -385,4 +386,11 @@ test('asset validation rejects malformed GLBs and reads structural counts', () =
     const inspection = inspectGlb(bytes);
     assert.equal(inspection.valid, true);
     assert.deepEqual([inspection.meshes, inspection.nodes, inspection.materials], [1, 1, 1]);
+});
+
+test('terrain material layers preserve biome order and array-compatible channels', () => {
+    assert.deepEqual(TERRAIN_MATERIALS.layers.map((layer) => layer.biome), [...BIOME_NAMES]);
+    assert.equal(new Set(TERRAIN_MATERIALS.layers.map((layer) => layer.id)).size, BIOME_NAMES.length);
+    assert.ok(TERRAIN_MATERIALS.layers.every((layer) => layer.metresPerTile > 0 && layer.normalStrength >= 0));
+    assert.deepEqual(TERRAIN_MATERIALS.arrayFormat.requiredDimensions, [2048, 2048]);
 });

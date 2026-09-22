@@ -28,6 +28,7 @@ export interface InputState {
 
 export interface InputHooks {
     onToggleOverlay?: () => void;
+    onScreenshot?: () => void;
 }
 
 export const input: InputState = {
@@ -79,13 +80,15 @@ const LOOK_SCALE = 0.0022;
 
 /** @type {(() => void)|null} */
 let onToggleOverlay: (() => void) | null = null;
+let onScreenshot: (() => void) | null = null;
 
 /**
  * @param {HTMLCanvasElement} canvas
- * @param {{ onToggleOverlay?: () => void }} [hooks]
+ * @param hooks - Optional global UI actions handled alongside gameplay input.
  */
 export function initInput(canvas: HTMLCanvasElement, hooks?: InputHooks): void {
     onToggleOverlay = hooks?.onToggleOverlay ?? null;
+    onScreenshot = hooks?.onScreenshot ?? null;
 
     canvas.addEventListener("click", () => {
         if (!input.locked) canvas.requestPointerLock();
@@ -138,6 +141,10 @@ export function initInput(canvas: HTMLCanvasElement, hooks?: InputHooks): void {
             return;
         }
         if (isUI(e.target)) return;
+        if (e.code === "KeyP") {
+            if (!e.repeat) onScreenshot?.();
+            return;
+        }
         if (e.code === 'Space') e.preventDefault();
         if (e.repeat) return;
         if (e.code === 'Space') input.flyPressed = true;

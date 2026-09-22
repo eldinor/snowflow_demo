@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Exalted · Grass Lab</title>
+  <link rel="stylesheet" href="./grass/grass.css">
+</head>
+<body>
+  <canvas id="view" tabindex="0" aria-label="Exalted grass performance lab"></canvas>
+  <aside>
+    <a href="./generated-world.html">← Generated world</a>
+    <p class="eyebrow">World generator</p>
+    <h1>Grass Lab</h1>
+    <p id="status">Loading generated fields…</p>
+    <button id="camera-mode">Camera: Ground</button>
+    <button id="reset-camera">Reset camera</button>
+
+    <fieldset><legend>Coverage</legend>
+      <label class="toggle"><input id="enabled" type="checkbox" checked> Grass enabled</label>
+      <label>Density <output id="density-value">2.0×</output></label>
+      <input id="density" type="range" min="0.25" max="4" step="0.25" value="2">
+      <label>Near distance <output id="near-value">22 m</output></label>
+      <input id="near" type="range" min="8" max="40" step="1" value="22">
+      <label>Visible distance <output id="far-value">70 m</output></label>
+      <input id="far" type="range" min="30" max="120" step="2" value="70">
+    </fieldset>
+
+    <fieldset><legend>Blade</legend>
+      <label>Blade source</label>
+      <select id="blade-source">
+        <option value="procedural">Procedural</option>
+        <option value="imported">Imported GLB</option>
+        <option value="hybrid">Hybrid</option>
+      </select>
+      <label>Imported variant</label>
+      <select id="imported-variant">
+        <option value="grass_medium_01_tall_a_LOD2">Tall A · LOD2</option>
+        <option value="grass_medium_01_tiny_a_LOD2">Tiny A · LOD2</option>
+        <option value="grass_medium_01_tiny_c_LOD2">Tiny C · LOD2</option>
+        <option value="grass_medium_01_tiny_f_LOD2">Tiny F · LOD2</option>
+      </select>
+      <label>Height <output id="height-value">0.85 m</output></label>
+      <input id="height" type="range" min="0.25" max="1.6" step="0.05" value="0.85">
+      <label>Width <output id="width-value">4.5 cm</output></label>
+      <input id="width" type="range" min="0.015" max="0.1" step="0.005" value="0.045">
+    </fieldset>
+
+    <fieldset><legend>Wind and interaction</legend>
+      <label>Wind strength <output id="wind-value">0.30</output></label>
+      <input id="wind" type="range" min="0" max="1.2" step="0.05" value="0.3">
+      <label>Wind speed <output id="wind-speed-value">1.0</output></label>
+      <input id="wind-speed" type="range" min="0" max="3" step="0.1" value="1">
+      <label class="toggle"><input id="interaction" type="checkbox" checked> Camera interaction</label>
+      <label class="toggle"><input id="freeze-wind" type="checkbox"> Freeze wind</label>
+    </fieldset>
+
+    <label>Visualization</label>
+    <select id="visualization">
+      <option value="final">Final</option>
+      <option value="lod">LOD</option>
+      <option value="biome">Biome weight</option>
+      <option value="patches">Patch boundaries</option>
+    </select>
+
+    <dl>
+      <div><dt>Frame median / p95</dt><dd id="frame">—</dd></div>
+      <div><dt>Grass CPU</dt><dd id="cpu">—</dd></div>
+      <div><dt>Visible patches</dt><dd id="patches">—</dd></div>
+      <div><dt>Near / mid blades</dt><dd id="instances">—</dd></div>
+      <div><dt>Visible triangles</dt><dd id="triangles">—</dd></div>
+      <div><dt>Draw calls</dt><dd id="draws">—</dd></div>
+      <div><dt>Prototype tris</dt><dd id="prototype-tris">—</dd></div>
+    </dl>
+    <p class="help">Click the view, then use WASD and the mouse. Shift moves faster. The pale sphere shows the interaction proxy.</p>
+  </aside>
+  <script type="module" src="./grass/main.ts"></script>
+</body>
+</html>

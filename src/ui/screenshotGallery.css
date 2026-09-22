@@ -1,0 +1,54 @@
+.screenshot-gallery:not([hidden]) {
+    position: fixed;
+    left: 12px;
+    bottom: 12px;
+    z-index: 75;
+    display: grid;
+    width: min(560px, calc(100vw - 24px));
+    gap: 6px;
+    padding: 7px;
+    box-sizing: border-box;
+    border: 1px solid rgba(211, 226, 238, 0.2);
+    border-radius: 8px;
+    background: rgba(9, 17, 26, 0.88);
+    backdrop-filter: blur(16px);
+    color: #e3edf5;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
+}
+.screenshot-strip { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: thin; }
+.screenshot-card { position: relative; flex: 0 0 116px; height: 65px; overflow: hidden; border-radius: 5px; background: #05090d; }
+.screenshot-card img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.screenshot-card time { position: absolute; inset: 3px auto auto 3px; padding: 2px 4px; border-radius: 3px; background: rgba(7, 13, 20, 0.76); color: #e3edf5; font: 9px/1.1 ui-monospace, monospace; }
+.screenshot-actions { position: absolute; inset: auto 3px 3px auto; display: flex; gap: 3px; }
+.screenshot-actions button,
+.screenshot-download-all {
+    border: 1px solid rgba(211, 226, 238, 0.28);
+    border-radius: 4px;
+    background: rgba(7, 13, 20, 0.82);
+    color: #e3edf5;
+    cursor: pointer;
+}
+.screenshot-actions button { display: grid; place-items: center; width: 25px; height: 25px; padding: 4px; }
+.screenshot-gallery svg,
+.screenshot-lightbox svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.screenshot-actions button:hover,
+.screenshot-download-all:hover { background: rgba(116, 174, 211, 0.26); }
+.screenshot-actions button:focus-visible,
+.screenshot-download-all:focus-visible { outline: 2px solid #b7dfff; outline-offset: 1px; }
+.screenshot-download-all { justify-self: start; display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 4px 9px; font: 11px/1.2 system-ui, sans-serif; }
+.screenshot-download-all:disabled { opacity: 0.55; cursor: wait; }
+.screenshot-status { position: absolute; left: 8px; bottom: 42px; min-height: 16px; padding: 3px 6px; border-radius: 4px; background: rgba(7, 13, 20, 0.84); font: 10px/1.2 system-ui, sans-serif; pointer-events: none; }
+.screenshot-status:empty { display: none; }
+.screenshot-lightbox:not([hidden]) { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 32px; box-sizing: border-box; background: rgba(2, 6, 10, 0.88); backdrop-filter: blur(8px); }
+.screenshot-lightbox-frame { position: relative; display: grid; max-width: min(92vw, 1600px); max-height: 92vh; gap: 10px; }
+.screenshot-lightbox-frame > img { display: block; max-width: 100%; max-height: calc(92vh - 48px); margin: auto; border-radius: 7px; box-shadow: 0 18px 70px rgba(0, 0, 0, 0.55); object-fit: contain; }
+.screenshot-lightbox-footer { display: flex; align-items: center; justify-content: center; gap: 14px; color: #e3edf5; font: 12px/1.2 system-ui, sans-serif; }
+.screenshot-lightbox button { display: grid; place-items: center; width: 34px; height: 34px; padding: 7px; border: 1px solid rgba(211, 226, 238, 0.3); border-radius: 50%; background: rgba(9, 17, 26, 0.88); color: #e3edf5; cursor: pointer; }
+.screenshot-lightbox button:hover { background: rgba(116, 174, 211, 0.28); }
+.screenshot-lightbox button:focus-visible { outline: 2px solid #b7dfff; outline-offset: 2px; }
+.screenshot-lightbox-close { position: absolute; top: 10px; right: 10px; }
+@media (max-width: 700px) {
+    .screenshot-gallery:not([hidden]) { left: 6px; bottom: 6px; width: calc(100vw - 12px); }
+    .screenshot-card { flex-basis: 104px; height: 58px; }
+    .screenshot-lightbox:not([hidden]) { padding: 12px; }
+}

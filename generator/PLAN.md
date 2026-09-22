@@ -325,6 +325,15 @@ Add large-scale domain noise to transitions without destroying geographic logic.
 
 ## Biome-specific terrain detail
 
+Material progress:
+
+- [x] Stable eight-layer terrain material catalog in biome-channel order.
+- [x] Physical tile scales and OpenGL normal/packed AO-roughness-height contract.
+- [x] Distance-filtered procedural micro-normal fallback.
+- [ ] Assign production tileable PBR source textures.
+- [ ] Build KTX2 texture arrays and separate production/diagnostic terrain materials.
+- [ ] Height-aware stochastic tiling and slope triplanar sampling.
+
 Biome classification selects additional terrain character:
 
 | Biome | Detail |

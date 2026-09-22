@@ -6,6 +6,7 @@ import { Color3, Color4, Vector2, Vector3 } from '@babylonjs/core/Maths/math';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { ShaderMaterial } from '@babylonjs/core/Materials/shaderMaterial';
 import { RawTexture } from '@babylonjs/core/Materials/Textures/rawTexture';
+import { Texture } from '@babylonjs/core/Materials/Textures/texture';
 import { Constants } from '@babylonjs/core/Engines/constants';
 import { ShaderLanguage } from '@babylonjs/core/Materials/shaderLanguage';
 import { CreateGround } from '@babylonjs/core/Meshes/Builders/groundBuilder';
@@ -230,7 +231,7 @@ async function boot(): Promise<void> {
                 shaderLanguage: ShaderLanguage.WGSL,
                 attributes: ['position', 'color'],
                 uniforms: ['viewProjection', 'worldOrigin', 'worldExtent', 'heightRes', 'normalSampleStep', 'lightDirection', 'cameraPosition', 'biomeDebug', 'shadowDebug', 'hydrologyDebug', 'maximumAccumulation', 'deformCenter', 'deformSize', 'deformRes', 'deformEnabled', 'deformMinimum', 'deformRange', 'useClipmap', 'lodCenter', 'baseSpacing', 'gridHalfN', 'shadowEnabled'],
-                samplers: ['heightTex', 'biomes0', 'biomes1', 'deformTex', 'flowDirection', 'flowAccumulation', 'lakeMask', 'lakeSurface', 'riverMask', 'riverCarve', 'waterfallMask', 'waterDepth', 'shorelineMask', 'swimmableMask', 'landmarkClearance', 'roadMask', 'roadGrade'],
+                samplers: ['heightTex', 'biomes0', 'biomes1', 'deformTex', 'hydrologyMasks', 'flowAccumulation', 'lakeSurface', 'riverCarve', 'waterDepth', 'shorelineMask', 'swimmableMask', 'landmarkClearance', 'roadMask', 'roadGrade', 'desertAlbedo', 'desertNormal', 'desertArm'],
             },
         );
         gpuMaterial.setTexture('heightTex', heightTexture);
@@ -262,12 +263,40 @@ async function boot(): Promise<void> {
         );
         gpuMaterial.setTexture('biomes0', biomeTexture0);
         gpuMaterial.setTexture('biomes1', biomeTexture1);
-        const flowDirectionTexture = RawTexture.CreateRTexture(
-            bakedHydrology?.direction ?? new Uint8Array([0]),
-            bakedHydrology?.metadata.width ?? 1,
-            bakedHydrology?.metadata.height ?? 1,
+        const desertAlbedoTexture = new Texture(
+            '/terrain/atlas/terrain_diff_atlas_2k.jpg?v=2', scene, false, false,
+            Constants.TEXTURE_TRILINEAR_SAMPLINGMODE,
+        );
+        const desertNormalTexture = new Texture(
+            '/terrain/atlas/terrain_nor_gl_atlas_2k.jpg?v=2', scene, false, false,
+            Constants.TEXTURE_TRILINEAR_SAMPLINGMODE,
+        );
+        const desertArmTexture = new Texture(
+            '/terrain/atlas/terrain_arm_atlas_2k.jpg?v=2', scene, false, false,
+            Constants.TEXTURE_TRILINEAR_SAMPLINGMODE,
+        );
+        desertAlbedoTexture.gammaSpace = true;
+        desertNormalTexture.gammaSpace = false;
+        desertArmTexture.gammaSpace = false;
+        for (const texture of [desertAlbedoTexture, desertNormalTexture, desertArmTexture]) {
+            texture.wrapU = Texture.WRAP_ADDRESSMODE;
+            texture.wrapV = Texture.WRAP_ADDRESSMODE;
+            texture.anisotropicFilteringLevel = 8;
+        }
+        gpuMaterial.setTexture('desertAlbedo', desertAlbedoTexture);
+        gpuMaterial.setTexture('desertNormal', desertNormalTexture);
+        gpuMaterial.setTexture('desertArm', desertArmTexture);
+        const hydrologyResolution = bakedHydrology?.metadata.width ?? 1;
+        const hydrologyMasks = new Uint8Array(hydrologyResolution * hydrologyResolution * 4);
+        for (let cell = 0; cell < hydrologyResolution * hydrologyResolution; cell++) {
+            hydrologyMasks[cell * 4] = bakedHydrology?.direction[cell] ?? 0;
+            hydrologyMasks[cell * 4 + 1] = bakedHydrology?.lakeMask[cell] ?? 0;
+            hydrologyMasks[cell * 4 + 2] = bakedHydrology?.riverMask[cell] ?? 0;
+            hydrologyMasks[cell * 4 + 3] = bakedHydrology?.waterfallMask[cell] ?? 0;
+        }
+        const hydrologyMasksTexture = RawTexture.CreateRGBATexture(
+            hydrologyMasks, hydrologyResolution, hydrologyResolution,
             scene, false, false, Constants.TEXTURE_NEAREST_SAMPLINGMODE,
-            Constants.TEXTURETYPE_UNSIGNED_BYTE,
         );
         const flowAccumulationTexture = RawTexture.CreateRTexture(
             bakedHydrology?.accumulation ?? new Float32Array([1]),
@@ -276,15 +305,8 @@ async function boot(): Promise<void> {
             scene, false, false, Constants.TEXTURE_NEAREST_SAMPLINGMODE,
             Constants.TEXTURETYPE_FLOAT,
         );
-        gpuMaterial.setTexture('flowDirection', flowDirectionTexture);
+        gpuMaterial.setTexture('hydrologyMasks', hydrologyMasksTexture);
         gpuMaterial.setTexture('flowAccumulation', flowAccumulationTexture);
-        const lakeMaskTexture = RawTexture.CreateRTexture(
-            bakedHydrology?.lakeMask ?? new Uint8Array([0]),
-            bakedHydrology?.metadata.width ?? 1,
-            bakedHydrology?.metadata.height ?? 1,
-            scene, false, false, Constants.TEXTURE_NEAREST_SAMPLINGMODE,
-            Constants.TEXTURETYPE_UNSIGNED_BYTE,
-        );
         const lakeSurfaceTexture = RawTexture.CreateRTexture(
             bakedHydrology?.lakeSurface ?? new Float32Array([0]),
             bakedHydrology?.metadata.width ?? 1,
@@ -292,16 +314,7 @@ async function boot(): Promise<void> {
             scene, false, false, Constants.TEXTURE_NEAREST_SAMPLINGMODE,
             Constants.TEXTURETYPE_FLOAT,
         );
-        gpuMaterial.setTexture('lakeMask', lakeMaskTexture);
         gpuMaterial.setTexture('lakeSurface', lakeSurfaceTexture);
-        const riverMaskTexture = RawTexture.CreateRTexture(
-            bakedHydrology?.riverMask ?? new Uint8Array([0]),
-            bakedHydrology?.metadata.width ?? 1,
-            bakedHydrology?.metadata.height ?? 1,
-            scene, false, false, Constants.TEXTURE_NEAREST_SAMPLINGMODE,
-            Constants.TEXTURETYPE_UNSIGNED_BYTE,
-        );
-        gpuMaterial.setTexture('riverMask', riverMaskTexture);
         const riverCarveTexture = RawTexture.CreateRTexture(
             bakedHydrology?.riverCarve ?? new Float32Array([0]),
             bakedHydrology?.metadata.width ?? 1,
@@ -309,15 +322,7 @@ async function boot(): Promise<void> {
             scene, false, false, Constants.TEXTURE_NEAREST_SAMPLINGMODE,
             Constants.TEXTURETYPE_FLOAT,
         );
-        const waterfallMaskTexture = RawTexture.CreateRTexture(
-            bakedHydrology?.waterfallMask ?? new Uint8Array([0]),
-            bakedHydrology?.metadata.width ?? 1,
-            bakedHydrology?.metadata.height ?? 1,
-            scene, false, false, Constants.TEXTURE_NEAREST_SAMPLINGMODE,
-            Constants.TEXTURETYPE_UNSIGNED_BYTE,
-        );
         gpuMaterial.setTexture('riverCarve', riverCarveTexture);
-        gpuMaterial.setTexture('waterfallMask', waterfallMaskTexture);
         const waterDepthTexture = RawTexture.CreateRTexture(
             bakedHydrology?.waterDepth ?? new Float32Array([0]),
             bakedHydrology?.metadata.width ?? 1,
@@ -443,11 +448,12 @@ async function boot(): Promise<void> {
         waterMaterial = new ShaderMaterial('generated-water-material', scene, 'generatedWaterTerrain', {
             shaderLanguage: ShaderLanguage.WGSL,
             attributes: ['position'],
-            uniforms: ['viewProjection', 'worldOrigin', 'worldExtent', 'waterRes', 'lodCenter', 'baseSpacing', 'gridHalfN', 'useClipmap', 'cameraPosition', 'time', 'waterOpacity'],
-            samplers: ['waterMask', 'waterSurface'],
+            uniforms: ['viewProjection', 'worldOrigin', 'worldExtent', 'waterRes', 'lodCenter', 'baseSpacing', 'gridHalfN', 'useClipmap', 'cameraPosition', 'time', 'waterOpacity', 'lightDirection'],
+            samplers: ['waterMask', 'waterSurface', 'waterDepth'],
         });
         waterMaterial.setTexture('waterMask', waterMaskTexture);
         waterMaterial.setTexture('waterSurface', waterSurfaceTexture);
+        waterMaterial.setTexture('waterDepth', waterDepthTexture);
         waterMaterial.setVector2('worldOrigin', new Vector2(bakedHeight.metadata.origin[0], bakedHeight.metadata.origin[1]));
         waterMaterial.setVector2('worldExtent', new Vector2(bakedHeight.metadata.extent[0], bakedHeight.metadata.extent[1]));
         waterMaterial.setFloat('waterRes', bakedHydrology?.metadata.width ?? 1);
@@ -458,6 +464,7 @@ async function boot(): Promise<void> {
         waterMaterial.setVector3('cameraPosition', camera.position);
         waterMaterial.setFloat('time', 0);
         waterMaterial.setFloat('waterOpacity', Number(waterOpacity.value));
+        waterMaterial.setVector3('lightDirection', new Vector3(-0.35, 1, 0.2).normalize());
         waterMaterial.alpha = 0.78;
         waterMaterial.backFaceCulling = false;
         waterMaterial.disableDepthWrite = true;

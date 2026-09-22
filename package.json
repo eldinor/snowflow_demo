@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --import tsx --test tests/avatarRig.test.js tests/meshSurface.test.js tests/propCollisions.test.js tests/flight.test.js tests/waterGeometry.test.js tests/swimming.test.js tests/forest.test.js tests/flyMovement.test.js generator/tests/worldFields.test.ts",
+    "test": "node --import tsx --test tests/avatarRig.test.js tests/meshSurface.test.js tests/propCollisions.test.js tests/flight.test.js tests/waterGeometry.test.js tests/swimming.test.js tests/forest.test.js tests/flyMovement.test.js tests/screenshotCollection.test.ts generator/tests/worldFields.test.ts",
     "test:generator": "node --import tsx --test generator/tests/worldFields.test.ts",
     "generator:height": "node --import tsx generator/scripts/generate-height.mts",
     "generator:inspect-height": "node --import tsx generator/scripts/inspect-height.mts",
@@ -18,6 +18,7 @@
     "generator:roads": "node --import tsx generator/scripts/generate-roads.mts",
     "generator:placements": "node --import tsx generator/scripts/generate-placements.mts",
     "generator:validate-assets": "node --import tsx generator/scripts/validate-assets.mts",
+    "generator:terrain-materials": "node --import tsx generator/scripts/generate-terrain-materials.mts",
     "generator:inspect-biomes": "node --import tsx generator/scripts/inspect-biomes.mts",
     "prepare:forest": "node scripts/prepare-forest.mjs",
     "avatar:export": "node --import tsx scripts/avatar/export-avatar.mts",
@@ -44,6 +45,7 @@
     "@babylonjs/loaders": "9.18.0",
     "@babylonjs/materials": "9.18.0",
     "@babylonjs/serializers": "9.18.0",
+    "fflate": "^0.8.3",
     "meshoptimizer": "^1.2.0"
   },
   "devDependencies": {

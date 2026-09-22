@@ -31,6 +31,7 @@ import { SpellSystem } from "./spells/spellSystem.ts";
 import { Overlay } from "./ui/overlay.ts";
 import { SpawnBar } from "./ui/spawnBar.ts";
 import { installInspectorShortcut } from './ui/inspector.ts';
+import { ScreenshotGallery } from './ui/screenshotGallery.ts';
 import { Sky } from "./render/sky.ts";
 import { ShadowSystem } from "./render/shadows.ts";
 import { Terrain } from "./terrain/terrain.ts";
@@ -71,6 +72,7 @@ interface ExaltedRuntime {
     perfStats: typeof stats;
     desertProps: DesertProps | null;
     worldWater: WorldWater | null;
+    screenshotGallery: ScreenshotGallery;
 }
 
 declare global {
@@ -260,7 +262,11 @@ async function boot(): Promise<void> {
     const post = new PostChain(scene, rig.camera, depthPass, sky);
 
     const overlay = new Overlay({ rig, character });
-    initInput(canvas, { onToggleOverlay: () => overlay.toggle() });
+    const screenshotGallery = new ScreenshotGallery(engine, rig.camera);
+    initInput(canvas, {
+        onToggleOverlay: () => overlay.toggle(),
+        onScreenshot: () => void screenshotGallery.capture(),
+    });
     installInspectorShortcut(scene);
 
     // ------------------------------------------------------------- warm-up
@@ -432,6 +438,7 @@ async function boot(): Promise<void> {
         S, input, perfStats: stats,
         desertProps,
         worldWater,
+        screenshotGallery,
         };
 }
 

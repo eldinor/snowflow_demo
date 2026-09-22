@@ -26,20 +26,14 @@ var biomes0: texture_2d<f32>;
 var biomes0Sampler: sampler;
 var biomes1: texture_2d<f32>;
 var biomes1Sampler: sampler;
-var flowDirection: texture_2d<f32>;
-var flowDirectionSampler: sampler;
 var flowAccumulation: texture_2d<f32>;
 var flowAccumulationSampler: sampler;
-var lakeMask: texture_2d<f32>;
-var lakeMaskSampler: sampler;
+var hydrologyMasks: texture_2d<f32>;
+var hydrologyMasksSampler: sampler;
 var lakeSurface: texture_2d<f32>;
 var lakeSurfaceSampler: sampler;
-var riverMask: texture_2d<f32>;
-var riverMaskSampler: sampler;
 var riverCarve: texture_2d<f32>;
 var riverCarveSampler: sampler;
-var waterfallMask: texture_2d<f32>;
-var waterfallMaskSampler: sampler;
 var waterDepth: texture_2d<f32>;
 var waterDepthSampler: sampler;
 var shorelineMask: texture_2d<f32>;
@@ -50,6 +44,12 @@ var landmarkClearance: texture_2d<f32>;
 var landmarkClearanceSampler: sampler;
 var roadMask: texture_2d<f32>;
 var roadMaskSampler: sampler;
+var desertAlbedo: texture_2d<f32>;
+var desertAlbedoSampler: sampler;
+var desertNormal: texture_2d<f32>;
+var desertNormalSampler: sampler;
+var desertArm: texture_2d<f32>;
+var desertArmSampler: sampler;
 
 fn shadowDeformationHeight(worldXZ: vec2f) -> f32 {
     if (uniforms.deformEnabled < 0.5) { return 0.0; }
@@ -170,17 +170,66 @@ fn materialRoughness(index: i32) -> f32 {
     }
 }
 
+fn materialDetailHeight(index: i32, worldXZ: vec2f) -> f32 {
+    switch index {
+        case 0: { return valueNoise(worldXZ / 1.35) * 0.45 + sin(dot(worldXZ, vec2f(0.92, 0.38)) * 3.2) * 0.08; }
+        case 1: { return valueNoise(worldXZ / 0.92) * 0.34 + valueNoise(worldXZ / 3.8) * 0.18; }
+        case 2: { return valueNoise(worldXZ / 0.68) * 0.42 + valueNoise(worldXZ / 2.7) * 0.24; }
+        case 3: { return valueNoise(worldXZ / 1.8) * 0.22 + sin(worldXZ.x * 1.4 + sin(worldXZ.y * 0.4)) * 0.06; }
+        case 4: { return valueNoise(worldXZ / 1.25) * 0.62 + valueNoise(worldXZ / 4.5) * 0.28; }
+        case 5: { return valueNoise(worldXZ / 0.75) * 0.2; }
+        case 6: { return valueNoise(worldXZ / 0.52) * 0.5 + valueNoise(worldXZ / 2.2) * 0.16; }
+        default: { return valueNoise(worldXZ / 1.1) * 0.25; }
+    }
+}
+
+fn materialNormalStrength(index: i32) -> f32 {
+    switch index {
+        case 0: { return 0.72; } case 1: { return 0.82; } case 2: { return 0.9; }
+        case 3: { return 0.54; } case 4: { return 1.15; } case 5: { return 0.65; }
+        case 6: { return 0.88; } default: { return 0.62; }
+    }
+}
+
+fn proceduralDetailNormal(index: i32, worldXZ: vec2f, geometricNormal: vec3f, footprint: f32) -> vec3f {
+    let step = 0.18;
+    let west = materialDetailHeight(index, worldXZ - vec2f(step, 0.0));
+    let east = materialDetailHeight(index, worldXZ + vec2f(step, 0.0));
+    let south = materialDetailHeight(index, worldXZ - vec2f(0.0, step));
+    let north = materialDetailHeight(index, worldXZ + vec2f(0.0, step));
+    let perturbation = vec3f(west - east, 0.0, south - north) * materialNormalStrength(index);
+    let detailFade = (1.0 - smoothstep(0.45, 4.5, footprint)) * smoothstep(0.06, 0.35, geometricNormal.y);
+    return normalize(geometricNormal + perturbation * detailFade);
+}
+
+fn rotate2(value: vec2f, angle: f32) -> vec2f {
+    let cosine = cos(angle);
+    let sine = sin(angle);
+    return vec2f(cosine * value.x - sine * value.y, sine * value.x + cosine * value.y);
+}
+
+fn terrainAtlasUV(value: vec2f, layer: f32) -> vec2f {
+    // Half-pixel insets keep bilinear filtering inside each repeating atlas tile.
+    return vec2f(layer * 0.5 + 0.00025 + fract(value.x) * 0.4995, 0.0005 + fract(value.y) * 0.999);
+}
+
 @fragment
 fn main(input: FragmentInputs) -> FragmentOutputs {
     let footprint = max(length(dpdx(input.vWorld.xz)), length(dpdy(input.vWorld.xz)));
     if (any(input.vBiomeUV < vec2f(0.0)) || any(input.vBiomeUV > vec2f(1.0))) { discard; }
-    let normal = normalize(input.vNormal);
+    var normal = normalize(input.vNormal);
     let weights0 = textureSample(biomes0, biomes0Sampler, input.vBiomeUV);
     let weights1 = textureSample(biomes1, biomes1Sampler, input.vBiomeUV);
     let weights = array<f32, 8>(
         weights0.r, weights0.g, weights0.b, weights0.a,
         weights1.r, weights1.g, weights1.b, weights1.a
     );
+    var dominantLayer = 0;
+    var dominantWeight = weights[0];
+    for (var layer = 1; layer < 8; layer++) {
+        if (weights[layer] > dominantWeight) { dominantLayer = layer; dominantWeight = weights[layer]; }
+    }
+    normal = proceduralDetailNormal(dominantLayer, input.vWorld.xz, normal, footprint);
     if (uniforms.hydrologyDebug > 6.5) {
         let road = textureSample(roadMask, roadMaskSampler, input.vBiomeUV).r;
         let terrain = vec3f(0.045, 0.052, 0.055);
@@ -189,8 +238,9 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
     }
     if (uniforms.hydrologyDebug > 5.5) {
         let shoreline = textureSample(shorelineMask, shorelineMaskSampler, input.vBiomeUV).r;
-        let water = textureSample(lakeMask, lakeMaskSampler, input.vBiomeUV).r;
-        let river = textureSample(riverMask, riverMaskSampler, input.vBiomeUV).r;
+        let masks = textureSample(hydrologyMasks, hydrologyMasksSampler, input.vBiomeUV);
+        let water = masks.g;
+        let river = masks.b;
         let wet = max(water, river);
         let base = mix(vec3f(0.045, 0.052, 0.055), vec3f(0.03, 0.18, 0.27), wet);
         fragmentOutputs.color = vec4f(mix(base, vec3f(1.0, 0.62, 0.08), shoreline), 1.0);
@@ -208,8 +258,9 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
         return fragmentOutputs;
     }
     if (uniforms.hydrologyDebug > 3.5) {
-        let river = textureSample(riverMask, riverMaskSampler, input.vBiomeUV).r;
-        let waterfall = textureSample(waterfallMask, waterfallMaskSampler, input.vBiomeUV).r;
+        let masks = textureSample(hydrologyMasks, hydrologyMasksSampler, input.vBiomeUV);
+        let river = masks.b;
+        let waterfall = masks.a;
         let dry = vec3f(0.045, 0.055, 0.06);
         let small = vec3f(0.10, 0.52, 0.72);
         let primary = vec3f(0.06, 0.72, 1.0);
@@ -219,7 +270,7 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
         return fragmentOutputs;
     }
     if (uniforms.hydrologyDebug > 2.5) {
-        let lake = textureSample(lakeMask, lakeMaskSampler, input.vBiomeUV).r;
+        let lake = textureSample(hydrologyMasks, hydrologyMasksSampler, input.vBiomeUV).g;
         let level = textureSample(lakeSurface, lakeSurfaceSampler, input.vBiomeUV).r;
         let elevationTint = clamp((level + 20.0) / 540.0, 0.0, 1.0);
         let dry = vec3f(0.055, 0.065, 0.07);
@@ -235,9 +286,84 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
         return fragmentOutputs;
     }
     if (uniforms.hydrologyDebug > 0.5) {
-        fragmentOutputs.color = vec4f(flowDirectionColor(textureSample(flowDirection, flowDirectionSampler, input.vBiomeUV).r), 1.0);
+        fragmentOutputs.color = vec4f(flowDirectionColor(textureSample(hydrologyMasks, hydrologyMasksSampler, input.vBiomeUV).r), 1.0);
         return fragmentOutputs;
     }
+    let desertUV = input.vWorld.xz / 2.5;
+    let desertUV0 = desertUV;
+    let desertUV1 = rotate2(desertUV * 0.93, 0.83) + vec2f(17.31, 9.17);
+    let desertUV2 = rotate2(desertUV * 1.07, -1.19) + vec2f(-8.43, 21.73);
+    let desertNoise0 = valueNoise(input.vWorld.xz / 11.0);
+    let desertNoise1 = valueNoise((input.vWorld.xz + vec2f(37.0, -19.0)) / 17.0);
+    let desertBaseWeights = vec3f(0.72 + desertNoise0 * 0.36, 0.72 + desertNoise1 * 0.36, 0.96 - (desertNoise0 + desertNoise1) * 0.18);
+    let desertAtlasUV0 = terrainAtlasUV(desertUV0, 0.0);
+    let desertAtlasUV1 = terrainAtlasUV(desertUV1, 0.0);
+    let desertAtlasUV2 = terrainAtlasUV(desertUV2, 0.0);
+    let desertArm0 = textureSample(desertArm, desertArmSampler, desertAtlasUV0).rgb;
+    let desertArm1 = textureSample(desertArm, desertArmSampler, desertAtlasUV1).rgb;
+    let desertArm2 = textureSample(desertArm, desertArmSampler, desertAtlasUV2).rgb;
+    // The AO channel tracks the larger grain and hollow structure closely enough
+    // to guide stochastic selection without spending another texture binding.
+    let desertHeights = vec3f(desertArm0.r, desertArm1.r, desertArm2.r);
+    // Keep transitions broad and soft. Hard height-selected weights produce visible
+    // square islands when the terrain is viewed from above.
+    let desertWeightedHeights = desertBaseWeights * (vec3f(0.88) + desertHeights * 0.20);
+    let desertWeights = desertWeightedHeights * desertWeightedHeights + vec3f(0.01);
+    let desertWeightSum = desertWeights.x + desertWeights.y + desertWeights.z;
+    let desertHeightValue = dot(desertHeights, desertWeights) / desertWeightSum;
+    let desertColor = (
+        textureSample(desertAlbedo, desertAlbedoSampler, desertAtlasUV0).rgb * desertWeights.x
+        + textureSample(desertAlbedo, desertAlbedoSampler, desertAtlasUV1).rgb * desertWeights.y
+        + textureSample(desertAlbedo, desertAlbedoSampler, desertAtlasUV2).rgb * desertWeights.z
+    ) / desertWeightSum * (0.94 + desertHeightValue * 0.10);
+    let normal0 = textureSample(desertNormal, desertNormalSampler, desertAtlasUV0).xyz * 2.0 - 1.0;
+    let normal1Raw = textureSample(desertNormal, desertNormalSampler, desertAtlasUV1).xyz * 2.0 - 1.0;
+    let normal2Raw = textureSample(desertNormal, desertNormalSampler, desertAtlasUV2).xyz * 2.0 - 1.0;
+    let normal1XY = rotate2(normal1Raw.xy, -0.83);
+    let normal2XY = rotate2(normal2Raw.xy, 1.19);
+    let desertNormalSample = normalize((
+        normal0 * desertWeights.x
+        + vec3f(normal1XY, normal1Raw.z) * desertWeights.y
+        + vec3f(normal2XY, normal2Raw.z) * desertWeights.z
+    ) / desertWeightSum);
+    let desertArmSample = (
+        desertArm0 * desertWeights.x
+        + desertArm1 * desertWeights.y
+        + desertArm2 * desertWeights.z
+    ) / desertWeightSum;
+    let desertBlend = smoothstep(0.12, 0.62, weights[0]);
+    let desertWorldNormal = normalize(vec3f(desertNormalSample.x, max(desertNormalSample.z, 0.08), desertNormalSample.y));
+    normal = normalize(mix(normal, desertWorldNormal, desertBlend * smoothstep(0.35, 0.8, normal.y) * 0.72));
+    let grassUV = input.vWorld.xz / 2.0;
+    let grassAtlasUV0 = terrainAtlasUV(grassUV, 1.0);
+    let grassAtlasUV1 = terrainAtlasUV(rotate2(grassUV * 0.94, 0.71) + vec2f(12.7, -8.2), 1.0);
+    let grassAtlasUV2 = terrainAtlasUV(rotate2(grassUV * 1.06, -1.07) + vec2f(-6.4, 18.9), 1.0);
+    let grassNoise0 = valueNoise((input.vWorld.xz + vec2f(11.0, 29.0)) / 13.0);
+    let grassNoise1 = valueNoise((input.vWorld.xz + vec2f(-31.0, 7.0)) / 19.0);
+    let grassWeights = vec3f(0.8 + grassNoise0 * 0.28, 0.8 + grassNoise1 * 0.28, 1.08 - (grassNoise0 + grassNoise1) * 0.2);
+    let grassWeightSum = grassWeights.x + grassWeights.y + grassWeights.z;
+    let grassColorRaw = (
+        textureSample(desertAlbedo, desertAlbedoSampler, grassAtlasUV0).rgb * grassWeights.x
+        + textureSample(desertAlbedo, desertAlbedoSampler, grassAtlasUV1).rgb * grassWeights.y
+        + textureSample(desertAlbedo, desertAlbedoSampler, grassAtlasUV2).rgb * grassWeights.z
+    ) / grassWeightSum;
+    // Preserve the scan's soil and leaf variation while restoring the green
+    // response that is otherwise lost under the world lighting and distance fog.
+    let grassColor = grassColorRaw * vec3f(0.76, 1.14, 0.72);
+    let grassNormal0 = textureSample(desertNormal, desertNormalSampler, grassAtlasUV0).xyz * 2.0 - 1.0;
+    let grassNormal1Raw = textureSample(desertNormal, desertNormalSampler, grassAtlasUV1).xyz * 2.0 - 1.0;
+    let grassNormal2Raw = textureSample(desertNormal, desertNormalSampler, grassAtlasUV2).xyz * 2.0 - 1.0;
+    let grassNormal1XY = rotate2(grassNormal1Raw.xy, -0.71);
+    let grassNormal2XY = rotate2(grassNormal2Raw.xy, 1.07);
+    let grassNormalSample = normalize((grassNormal0 * grassWeights.x + vec3f(grassNormal1XY, grassNormal1Raw.z) * grassWeights.y + vec3f(grassNormal2XY, grassNormal2Raw.z) * grassWeights.z) / grassWeightSum);
+    let grassArmSample = (
+        textureSample(desertArm, desertArmSampler, grassAtlasUV0).rgb * grassWeights.x
+        + textureSample(desertArm, desertArmSampler, grassAtlasUV1).rgb * grassWeights.y
+        + textureSample(desertArm, desertArmSampler, grassAtlasUV2).rgb * grassWeights.z
+    ) / grassWeightSum;
+    let grassBlend = smoothstep(0.12, 0.62, weights[1]);
+    let grassWorldNormal = normalize(vec3f(grassNormalSample.x, max(grassNormalSample.z, 0.08), grassNormalSample.y));
+    normal = normalize(mix(normal, grassWorldNormal, grassBlend * smoothstep(0.32, 0.78, normal.y) * 0.78));
     var baseColor = input.vColor;
     let roadCoverage = smoothstep(0.04, 0.82, textureSample(roadMask, roadMaskSampler, input.vBiomeUV).r);
     if (uniforms.biomeDebug < -3.5) {
@@ -255,6 +381,8 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
             for (var index = 0; index < 8; index++) {
                 baseColor += materialColor(index, input.vWorld, normal, footprint) * weights[index];
             }
+            baseColor = mix(baseColor, desertColor, desertBlend * 0.9);
+            baseColor = mix(baseColor, grassColor, grassBlend * 0.92);
             let roadMacro = valueNoise(input.vWorld.xz / 24.0) - 0.5;
             let roadLocal = (valueNoise(input.vWorld.xz / 3.8) - 0.5) * (1.0 - smoothstep(0.8, 5.0, footprint));
             let roadColor = mix(vec3f(0.16, 0.125, 0.09), vec3f(0.34, 0.275, 0.19), 0.55 + roadMacro * 0.24 + roadLocal * 0.12);
@@ -278,6 +406,8 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
     for (var index = 0; index < 8; index++) {
         roughness += materialRoughness(index) * weights[index];
     }
+    roughness = mix(roughness, desertArmSample.g, desertBlend);
+    roughness = mix(roughness, grassArmSample.g, grassBlend);
     if (uniforms.biomeDebug >= -0.5 && uniforms.biomeDebug < 0.5) {
         roughness = mix(roughness, 0.94, roadCoverage);
     }
@@ -288,7 +418,8 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
     let berm = smoothstep(0.008, 0.09, input.vDeformation);
     baseColor = mix(baseColor, baseColor * vec3f(0.63, 0.68, 0.72), compression * 0.72);
     baseColor = mix(baseColor, baseColor * 1.16, berm * 0.55);
-    let shaded = baseColor * lighting + vec3f(specular);
+    let terrainAO = mix(mix(1.0, desertArmSample.r, desertBlend * 0.7), grassArmSample.r, grassBlend * 0.7);
+    let shaded = baseColor * lighting * terrainAO + vec3f(specular);
     let distanceToCamera = distance(uniforms.cameraPosition, input.vWorld);
     let heightFog = exp(-max(input.vWorld.y, 0.0) * 0.0012);
     let fog = (1.0 - exp(-max(distanceToCamera - 480.0, 0.0) * 0.00072)) * heightFog;
