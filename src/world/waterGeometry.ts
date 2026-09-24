@@ -27,6 +27,36 @@ export interface BuiltWaterGeometry {
     level: number;
 }
 
+/** Remove steep, near-vertical water triangles that are rendered by the GPU waterfall instead. */
+export function withoutWaterfalls(data: WaterMeshData, minimumSlope = .5, margin = 45): WaterMeshData {
+    const result: WaterMeshData = { positions: [], normals: [], colors: [], indices: [] };
+    const falls: Array<readonly [number, number]> = [];
+    for (let i = 0; i < data.indices.length; i += 3) {
+        const ids = [data.indices[i], data.indices[i + 1], data.indices[i + 2]];
+        const slope = ids.reduce((sum, id) => sum + data.colors[id * 4 + 3], 0) / 3;
+        if (slope < minimumSlope) continue;
+        falls.push([
+            ids.reduce((sum, id) => sum + data.positions[id * 3], 0) / 3,
+            ids.reduce((sum, id) => sum + data.positions[id * 3 + 2], 0) / 3,
+        ]);
+    }
+    for (let i = 0; i < data.indices.length; i += 3) {
+        const ids = [data.indices[i], data.indices[i + 1], data.indices[i + 2]];
+        const slope = ids.reduce((sum, id) => sum + data.colors[id * 4 + 3], 0) / 3;
+        const x = ids.reduce((sum, id) => sum + data.positions[id * 3], 0) / 3;
+        const z = ids.reduce((sum, id) => sum + data.positions[id * 3 + 2], 0) / 3;
+        if (slope >= minimumSlope || falls.some(([fx, fz]) => Math.hypot(x - fx, z - fz) < margin)) continue;
+        const start = result.positions.length / 3;
+        for (const id of ids) {
+            result.positions.push(...data.positions.slice(id * 3, id * 3 + 3));
+            result.normals.push(...data.normals.slice(id * 3, id * 3 + 3));
+            result.colors.push(...data.colors.slice(id * 4, id * 4 + 4));
+        }
+        result.indices.push(start, start + 1, start + 2);
+    }
+    return result;
+}
+
 type WaterVertex = [number, number, number, number];
 type Point2 = readonly [number, number];
 

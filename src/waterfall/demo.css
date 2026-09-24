@@ -1,0 +1,15 @@
+* { box-sizing: border-box; }
+html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #101a22; color: #e7f0f5; font: 13px/1.4 system-ui, sans-serif; }
+canvas { display: block; width: 100%; height: 100%; outline: none; }
+aside { position: fixed; inset: 0 auto 0 0; z-index: 20; width: 292px; overflow-y: auto; padding: 14px; background: rgba(10,24,32,.92); border-right: 1px solid rgba(190,220,235,.18); backdrop-filter: blur(14px); }
+a { color: #a9d7ea; } h1 { margin: 12px 0 4px; font-size: 20px; } h2 { margin: 18px 0 7px; font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: #9cb3c0; }
+#status { color: #b9dfca; } .hint { color: #9fb1bb; font-size: 11px; }
+fieldset { margin: 14px 0 0; padding: 10px; border: 1px solid rgba(190,220,235,.18); border-radius: 6px; }
+legend { padding: 0 5px; color: #bdd4df; }
+label { display: grid; grid-template-columns: 1fr auto; gap: 3px 8px; margin: 0 0 11px; }
+label output { color: #9fd5eb; font-variant-numeric: tabular-nums; }
+label input[type=range], label select { grid-column: 1 / -1; width: 100%; }
+label.check { display: flex; align-items: center; gap: 8px; margin: 9px 0; }
+button, select, input { accent-color: #70b6d0; } button { padding: 6px 10px; cursor: pointer; }
+pre { margin: 0; color: #c9dae2; font: 11px/1.55 ui-monospace, monospace; white-space: pre-wrap; }
+@media (max-width: 700px) { aside { width: 250px; } }

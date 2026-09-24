@@ -1,6 +1,6 @@
 /** Named Rev B destinations in chart coordinates before Babylon conversion. */
 
-export type BiomeName = 'Desert' | 'Snow' | 'Grassland' | 'Forest' | 'Mountains' | 'Lake' | 'Pass';
+export type BiomeName = 'Desert' | 'Snow' | 'Grassland' | 'Forest' | 'Mountains' | 'Lake' | 'Island' | 'Waterfall' | 'Pass';
 
 /** Authored player inspection point; X/Y are map-plane coordinates and yaw is radians. */
 export interface SpawnPoint {
@@ -20,6 +20,9 @@ const points: SpawnPoint[] = [
     { id: 'C2', name: 'The Thornwood', biome: 'Forest', x: 767, y: -104, yaw: 0.8 },
     { id: 'C6', name: 'The Ironspine', biome: 'Mountains', x: 515, y: 380, yaw: 0 },
     { id: 'lakeside-overlook', name: 'Lakeside Overlook', biome: 'Lake', x: -334, y: 41, yaw: 0.7 },
+    { id: 'lake-island', name: 'Lake Island', biome: 'Island', x: -545, y: -152, yaw: 0.7 },
+    // River mouth beside the lake; positioned on the bank for waterfall inspection.
+    { id: 'waterfall', name: 'Waterfall', biome: 'Waterfall', x: -550, y: 65, yaw: -2.4 },
     { id: 'stone-gate', name: 'Stone Gate', biome: 'Pass', x: 65, y: 325, yaw: Math.PI },
 ];
 

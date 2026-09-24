@@ -85,6 +85,9 @@ export class DepthPass {
         this.rtt.clearColor = new Color4(DEPTH_FAR, 0, 0, 1);
         this.rtt.refreshRate = RenderTargetTexture.REFRESHRATE_RENDER_ONEVERYFRAME;
         this.rtt.renderList = [];
+        // Only explicitly registered opaque meshes belong in this prepass.
+        // Babylon particle systems use alpha blending and have their own depth.
+        this.rtt.renderParticles = false;
         this.rtt.skipInitialClear = false;
         this.size.set(w, h);
 

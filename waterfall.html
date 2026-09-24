@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Exalted · GPU waterfall lab</title>
+  <link rel="stylesheet" href="/src/waterfall/demo.css">
+</head>
+<body>
+  <canvas id="waterfall-view" tabindex="0" aria-label="GPU waterfall performance lab"></canvas>
+  <aside>
+    <a href="/">← Exalted</a>
+    <h1>GPU waterfall lab</h1>
+    <p id="status" role="status">Starting…</p>
+    <p class="hint">Drag to orbit · wheel to zoom. Fluid motion and rendering run on the GPU.</p>
+    <fieldset id="controls" disabled>
+      <legend>Water curtain</legend>
+      <label><span>Emission</span><output id="emission-out">3200</output><input id="emission" type="range" min="300" max="5000" step="100" value="3200"></label>
+      <label><span>Particle size</span><output id="size-out">0.24</output><input id="size" type="range" min="0.06" max="0.40" step="0.01" value="0.24"></label>
+      <label><span>Lip width</span><output id="width-out">4.0 m</output><input id="width" type="range" min="1" max="8" step="0.25" value="4"></label>
+      <label><span>Fluid density</span><output id="density-out">3.5</output><input id="density" type="range" min="0.5" max="10" step="0.1" value="3.5"></label>
+      <label><span>Refraction</span><output id="refraction-out">0.025</output><input id="refraction" type="range" min="0" max="0.12" step="0.005" value="0.025"></label>
+      <label><span>Depth blur passes</span><output id="depth-blur-out">3</output><input id="depth-blur" type="range" min="1" max="6" step="1" value="3"></label>
+      <label><span>Thickness blur passes</span><output id="thickness-blur-out">2</output><input id="thickness-blur" type="range" min="1" max="5" step="1" value="2"></label>
+      <label><span>Fluid buffer</span><select id="buffer"><option value="512">512</option><option value="1024" selected>1024</option><option value="screen">Screen size</option></select></label>
+      <label class="check"><input id="fluid" type="checkbox" checked> Fluid surface</label>
+      <label class="check"><input id="mist" type="checkbox" checked> GPU impact mist</label>
+      <label class="check"><input id="curtain" type="checkbox"> Background sheet</label>
+      <button id="reset" type="button">Reset view</button>
+    </fieldset>
+    <h2>Live measurements</h2>
+    <pre id="stats">Waiting…</pre>
+    <p class="hint">Frame timing includes presentation pacing. Compare settings from the same camera position.</p>
+  </aside>
+  <script type="module" src="/src/waterfall/demo.ts"></script>
+</body>
+</html>

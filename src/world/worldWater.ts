@@ -10,7 +10,7 @@ import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { Scene } from '@babylonjs/core/scene';
 import { S } from '../core/settings.ts';
 import { whenReady } from '../core/gpuUtil.ts';
-import { buildWaterGeometry, type WaterReference } from './waterGeometry.ts';
+import { buildWaterGeometry, withoutWaterfalls, type WaterReference } from './waterGeometry.ts';
 import referenceJson from './waterReference.json';
 import { WaterSurface, waterfallEmitters, type WaterSample, type WaterfallEmitter } from './waterSurface.ts';
 import type { LoadedTerrainData } from '../terrain/exaltedWorld.ts';
@@ -66,6 +66,7 @@ export class WorldWater {
     readonly level: number;
     readonly surface: WaterSurface;
     readonly emitters: WaterfallEmitter[];
+    readonly riverMouth: Vector2;
     time = 0;
     rippleIndex = 0;
     triangles = 0;
@@ -81,11 +82,15 @@ export class WorldWater {
         this.level = geometry.level;
         this.surface = new WaterSurface(geometry.lake, this.level);
         this.emitters = waterfallEmitters(geometry.river);
+        const mouth = reference.river[reference.river.length - 1];
+        this.riverMouth = new Vector2(-mouth[0], -mouth[1]);
         terrain.water = this;
 
         const bodies = [
             { name: 'lake', flow: 0, data: geometry.lake },
-            { name: 'river', flow: 1, data: geometry.river },
+            // Steep blue triangles are location markers for the dedicated GPU
+            // fall. Leaving them here would retain the old solid waterfall.
+            { name: 'river', flow: 0, data: withoutWaterfalls(geometry.river) },
         ] as const;
         for (const { name, flow, data } of bodies) {
             if (!data.indices.length) continue;

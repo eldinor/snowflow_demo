@@ -111,6 +111,9 @@ export class ShadowSystem {
             rtt.clearColor = new Color4(1, 1, 1, 1);
             rtt.refreshRate = RenderTargetTexture.REFRESHRATE_RENDER_ONEVERYFRAME;
             rtt.renderList = [];
+            // Alpha-blended particle materials cannot render into the R32F
+            // cascade colour target, and transient spray must not cast shadows.
+            rtt.renderParticles = false;
             rtt.skipInitialClear = false;
 
             scene.customRenderTargets.push(rtt);
